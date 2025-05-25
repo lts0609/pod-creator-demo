@@ -19,7 +19,7 @@ type ClientBuilderImpl struct {
 // Get the rest config
 func (c ClientBuilderImpl) Config() (*restclient.Config, error) {
 	config := c.ClientConfig
-	return config.AddUserAgent(&clientConfig, name), nil
+	return config.AddUserAgent(&config, name), nil
 }
 
 // Get the root client
