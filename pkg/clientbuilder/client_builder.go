@@ -1,14 +1,13 @@
 package clientbuilder
 
 import (
-	"k8s.io/client-go/discovery"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/klog/v2"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type ClientBuilder interface {
-	Config() *restclient.Config
+	Config() (*restclient.Config, error)
 	Client() (clientset.Interface, error)
 }
 
@@ -16,10 +15,23 @@ type ClientBuilderImpl struct {
 	ClientConfig *restclient.Config
 }
 
+func NewClientBuilder(path string) (*ClientBuilderImpl, error) {
+	if path == "" {
+		path = clientcmd.RecommendedHomeFile
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", path)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientBuilderImpl{
+		ClientConfig: config,
+	}, nil
+}
+
 // Get the rest config
 func (c ClientBuilderImpl) Config() (*restclient.Config, error) {
 	config := c.ClientConfig
-	return config.AddUserAgent(&config, name), nil
+	return restclient.AddUserAgent(config, "pod-creator"), nil
 }
 
 // Get the root client
