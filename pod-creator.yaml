@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-creator-demo
+  namespace: default
+  labels:
+    app: pod-creator-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pod-creator-demo
+  template:
+    metadata:
+      labels:
+        app: pod-creator-demo
+    spec:
+      containers:
+        - name: pod-creator-demo
+          image: pod-creator:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-creator-svc
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: pod-creator-demo
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080

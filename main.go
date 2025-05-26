@@ -1,16 +1,24 @@
 package main
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-
-	"pod-creator-demo/pkg/clientbuilder"
+	"net/http"
+	"os"
+	"os/signal"
+	"pod-creator-demo/clientbuilder"
+	"pod-creator-demo/handlers"
+	"syscall"
+	"time"
 )
+
+var kubeconfigPath string = clientcmd.RecommendedHomeFile
 
 func main() {
 	klog.InitFlags(nil)
-	kubeconfigPath := clientcmd.RecommendedHomeFile
+
 	clientbuilder, err := clientbuilder.NewClientBuilder(kubeconfigPath)
 	if err != nil {
 		klog.Fatalf("Failed to create client builder: %v", err)
@@ -19,8 +27,23 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Failed to create client: %v", err)
 	}
-	router := gin.Default()
-	router.POST("/create-pod", func(c *gin.Context) {
-	})
 
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	handlers.SetupRoutes(router, client)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+	srv.ListenAndServe()
+
+	stopchan := make(chan os.Signal, 1)
+	signal.Notify(stopchan, syscall.SIGINT, syscall.SIGTERM)
+	<-stopchan
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		klog.Fatalf("Server Shutdown Failed: %v", err)
+	}
+	klog.Infof("Shutting down gracefully")
 }
