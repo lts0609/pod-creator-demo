@@ -1,5 +1,5 @@
 # SETP1
-FROM golang:1.23-alpine as stage-bin-build
+FROM golang:1.23-alpine as builder
 
 WORKDIR /workspace
 
