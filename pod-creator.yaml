@@ -15,6 +15,9 @@ spec:
       labels:
         app: pod-creator-demo
     spec:
+      nodeSelector:
+        lts: lts
+      serviceAccountName: pod-creator-sa
       containers:
         - name: pod-creator-demo
           image: pod-creator:v1
