@@ -54,6 +54,7 @@ func GeneratePodTemplate(req model.PodCreateRequest) (*v1.Pod, error) {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: req.Name,
+			Namespace:    req.Namespace,
 			Labels: map[string]string{
 				"app":       "myapp",
 				"create-by": "pod-creator",

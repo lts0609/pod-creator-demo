@@ -15,16 +15,13 @@ type ClientBuilderImpl struct {
 	ClientConfig *restclient.Config
 }
 
-func NewClientBuilder(path string) (*ClientBuilderImpl, error) {
-	if path == "" {
-		path = clientcmd.RecommendedHomeFile
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", path)
+func NewClientBuilder() (*ClientBuilderImpl, error) {
+	kubeconfig, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return nil, err
 	}
 	return &ClientBuilderImpl{
-		ClientConfig: config,
+		ClientConfig: kubeconfig,
 	}, nil
 }
 

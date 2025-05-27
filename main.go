@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -14,12 +13,11 @@ import (
 	"time"
 )
 
-var kubeconfigPath string = clientcmd.RecommendedHomeFile
-
 func main() {
 	klog.InitFlags(nil)
+	klog.Errorf("Pod Creator Starting")
 
-	clientbuilder, err := clientbuilder.NewClientBuilder(kubeconfigPath)
+	clientbuilder, err := clientbuilder.NewClientBuilder()
 	if err != nil {
 		klog.Fatalf("Failed to create client builder: %v", err)
 	}
@@ -37,10 +35,11 @@ func main() {
 	}
 	srv.ListenAndServe()
 
-	stopchan := make(chan os.Signal, 1)
-	signal.Notify(stopchan, syscall.SIGINT, syscall.SIGTERM)
-	<-stopchan
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
+	<-stopChan
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		klog.Fatalf("Server Shutdown Failed: %v", err)
