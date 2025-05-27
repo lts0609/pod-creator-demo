@@ -17,11 +17,11 @@ func main() {
 	klog.InitFlags(nil)
 	klog.Errorf("Pod Creator Starting")
 
-	clientbuilder, err := clientbuilder.NewClientBuilder()
+	clientBuilder, err := clientbuilder.NewClientBuilder()
 	if err != nil {
 		klog.Fatalf("Failed to create client builder: %v", err)
 	}
-	client, err := clientbuilder.Client()
+	client, err := clientBuilder.Client()
 	if err != nil {
 		klog.Fatalf("Failed to create client: %v", err)
 	}
@@ -33,7 +33,11 @@ func main() {
 		Addr:    ":8080",
 		Handler: router,
 	}
-	srv.ListenAndServe()
+
+	err = srv.ListenAndServe()
+	if err != nil {
+		klog.Fatalf("Failed to start server: %v", err)
+	}
 
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)

@@ -18,7 +18,7 @@ func SetupRoutes(r *gin.Engine, client clientset.Interface) {
 func CreatePodHandler(client clientset.Interface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req model.PodCreateRequest
-
+		klog.Errorf("Handle create pod request")
 		if err := c.ShouldBindJSON(&req); err != nil {
 			klog.Fatalf("Error binding request: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
