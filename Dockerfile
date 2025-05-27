@@ -17,7 +17,7 @@ RUN go mod download
 
 COPY . ./
 
-RUN go build -o pod-creator-demo ./main.go
+RUN go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
 
 # SETP2
 FROM alpine:3.18
@@ -34,4 +34,4 @@ COPY --from=builder /app/pod-creator .
 
 EXPOSE 8080
 
-ENTRYPOINT ["./pod-creator"]
+CMD ["./pod-creator"]
