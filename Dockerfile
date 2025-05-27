@@ -1,7 +1,7 @@
-# SETP1
-FROM golang:1.23-alpine as builder
+# STEP1
+FROM m.daocloud.io/docker.io/golang:1.23-alpine as builder
 
-WORKDIR /workspace
+WORKDIR /usr/local/go/src/
 
 ENV GOPROXY="https://goproxy.cn,direct"
 
@@ -9,18 +9,12 @@ ENV CGO_ENABLED=0
 
 ENV GO111MODULE=on
 
-LABEL stage=stage-bin-build
-
-COPY ./go.mod ./
-
-RUN go mod download
-
 COPY . ./
 
-RUN go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
+RUN go mod tidy && go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
 
-# SETP2
-FROM alpine:3.18
+# STEP2
+FROM m.daocloud.io/docker.io/alpine:latest
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
     && apk add tzdata \
