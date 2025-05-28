@@ -20,11 +20,13 @@ spec:
       serviceAccountName: pod-creator-sa
       containers:
         - name: pod-creator-demo
-          image: pod-creator:v1
+          image: containercloud-mirror.xaidc.com/containercloud/pod-creator:v1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
+            - containerPort: 22
+              name: ssh
 
 ---
 apiVersion: v1
@@ -41,3 +43,7 @@ spec:
       port: 8080
       targetPort: 8080
       nodePort: 31231
+    - name: ssh
+      port: 22
+      targetPort: 22
+      nodePort: 31232
