@@ -18,15 +18,34 @@ spec:
       nodeSelector:
         lts: lts
       serviceAccountName: pod-creator-sa
+      initContainers:
+        - name: generate-ssh-password
+          image: containercloud-mirror.xaidc.com/library/alpine:3.2.0
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              PASSWORD=$(openssl rand -base64 12)
+              echo "${PASSWORD}" > /home/ssh/ssh-password
+              echo "SSH PASSWORD: ${PASSWORD}"
+          volumeMounts:
+            - name: ssh-password-volume
+              mountPath: /home/ssh
       containers:
         - name: pod-creator-demo
           image: containercloud-mirror.xaidc.com/containercloud/pod-creator:v1
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: ssh-password-volume
+              mountPath: /home/ssh
+              readOnly: true
           ports:
             - containerPort: 8080
               name: http
             - containerPort: 22
               name: ssh
+      volumes:
+        - name: ssh-password-volume
+          emptyDir: {}
 
 ---
 apiVersion: v1

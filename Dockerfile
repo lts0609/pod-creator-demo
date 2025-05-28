@@ -18,23 +18,23 @@ RUN go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
 # STEP2
 FROM m.daocloud.io/docker.io/alpine:latest
 
+WORKDIR /app
+
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
-    && apk add tzdata \
+    && apk add --no-cache openssh tzdata \
     && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
-    && apk del tzdata
+    && apk del tzdata \
+    && rm -rf /var/cache/apk/*
 
-RUN apk add --no-cache openssh \
-    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
-    && echo "root:root" | chpasswd \
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && mkdir -p /run/sshd \
     && ssh-keygen -A
 
-WORKDIR /app
+COPY --chmod=755 start.sh .
 
-COPY --from=builder /app/pod-creator .
+COPY --from=builder --chmod=755 /app/pod-creator .
 
 EXPOSE 8080 22
 
-CMD ["/bin/sh", "-c", "/usr/sbin/sshd -D & exec \"./pod-creator\""]
+CMD ["./start.sh"]
