@@ -1,7 +1,7 @@
 # STEP1
 FROM m.daocloud.io/docker.io/golang:1.23-alpine as builder
 
-WORKDIR /usr/local/go/src/
+WORKDIR /app
 
 ENV GOPROXY="https://goproxy.cn,direct"
 
@@ -11,7 +11,9 @@ ENV GO111MODULE=on
 
 COPY . ./
 
-RUN go mod tidy && go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
+RUN go mod tidy
+
+RUN go build -trimpath -ldflags "-s -w" -o pod-creator ./main.go
 
 # STEP2
 FROM m.daocloud.io/docker.io/alpine:latest
