@@ -20,10 +20,12 @@ spec:
       serviceAccountName: pod-creator-sa
       initContainers:
         - name: generate-ssh-password
-          image: containercloud-mirror.xaidc.com/library/alpine:3.2.0
+          image: containercloud-mirror.xaidc.com/library/alpine:3.20
           command: [ "/bin/sh", "-c" ]
           args:
             - |
+              sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+              apk update && apk add --no-cache openssl
               PASSWORD=$(openssl rand -base64 12)
               echo "${PASSWORD}" > /home/ssh/ssh-password
               echo "SSH PASSWORD: ${PASSWORD}"
