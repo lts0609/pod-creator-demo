@@ -24,10 +24,17 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
     && echo "Asia/Shanghai" > /etc/timezone \
     && apk del tzdata
 
+RUN apk add --no-cache openssh \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+    && echo "root:root" | chpasswd \
+    && mkdir -p /run/sshd \
+    && ssh-keygen -A
+
 WORKDIR /app
 
 COPY --from=builder /app/pod-creator .
 
-EXPOSE 8080
+EXPOSE 8080 22
 
-CMD ["./pod-creator"]
+CMD ["/bin/sh", "-c", "/usr/sbin/sshd -D & exec \"./pod-creator\""]
