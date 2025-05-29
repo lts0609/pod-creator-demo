@@ -19,11 +19,11 @@ func main() {
 
 	clientBuilder, err := clientbuilder.NewClientBuilder()
 	if err != nil {
-		klog.Fatalf("Failed to create client builder: %v", err)
+		klog.Errorf("Failed to create client builder: %v", err)
 	}
 	client, err := clientBuilder.Client()
 	if err != nil {
-		klog.Fatalf("Failed to create client: %v", err)
+		klog.Errorf("Failed to create client: %v", err)
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -36,7 +36,7 @@ func main() {
 
 	err = srv.ListenAndServe()
 	if err != nil {
-		klog.Fatalf("Failed to start server: %v", err)
+		klog.Errorf("Failed to start server: %v", err)
 	}
 
 	stopChan := make(chan os.Signal, 1)
@@ -46,7 +46,7 @@ func main() {
 
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		klog.Fatalf("Server Shutdown Failed: %v", err)
+		klog.Errorf("Server Shutdown Failed: %v", err)
 	}
 	klog.Infof("Shutting down gracefully")
 }
