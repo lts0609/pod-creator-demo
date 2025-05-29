@@ -17,6 +17,8 @@ type ClientBuilderImpl struct {
 
 func NewClientBuilder() (*ClientBuilderImpl, error) {
 	kubeconfig, err := clientcmd.BuildConfigFromFlags("", "")
+	// use in local test
+	//kubeconfig, err := clientcmd.BuildConfigFromFlags("", "/root/.kube/config")
 	if err != nil {
 		return nil, err
 	}
