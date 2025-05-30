@@ -24,6 +24,14 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 			return
 		}
 
+		// Check if the Deployment already exist
+		exist, err := client.AppsV1().Deployments(req.Namespace).Get(c.Request.Context(), req.Name, metav1.GetOptions{})
+		if exist != nil {
+			klog.Errorf("Deployment %s already exists", req.Name)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Create Deployment
 		deployment, err := GenerateDeploymentTemplate(req)
 		if err != nil {
