@@ -61,7 +61,7 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 			"Message":    "Deployment and Service Created Successfully",
 			"Deployment": deployment,
 			"Service":    service,
-			"NodePort":   service.Spec.Ports[0].Port,
+			"NodePort":   service.Spec.Ports[0].NodePort,
 		})
 	}
 }
