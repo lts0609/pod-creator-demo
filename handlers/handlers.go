@@ -59,8 +59,8 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 
 		c.JSON(http.StatusCreated, gin.H{
 			"Message":    "Deployment and Service Created Successfully",
-			"Deployment": deployment,
-			"Service":    service,
+			"Deployment": deployment.Name,
+			"Service":    service.Name,
 			"NodePort":   service.Spec.Ports[0].NodePort,
 		})
 	}
