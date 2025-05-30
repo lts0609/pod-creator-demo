@@ -37,12 +37,13 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 			HandleError(c, "GenerateDeploymentTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		klog.Infof("Creating deployment %s in namespace %s", deployment.Name, deployment.Namespace)
+		klog.Infof("Creating Deployment %s in Namespace %s", deployment.Name, deployment.Namespace)
 		_, err = client.AppsV1().Deployments(deployment.Namespace).Create(c.Request.Context(), deployment, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Deployment Error", err, http.StatusBadRequest)
 			return
 		}
+		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
 
 		// Create Service
 		service, err := GenerateServiceTemplate(req)
@@ -50,12 +51,13 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		klog.Infof("Creating service %s in namespace %s", service.Name, service.Namespace)
+		klog.Infof("Creating Service %s in Namespace %s", service.Name, service.Namespace)
 		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
 			return
 		}
+		klog.Infof("Create Service %s in Namespace %s Successfully", service.Name, service.Namespace)
 
 		c.JSON(http.StatusCreated, gin.H{
 			"Message":    "Deployment and Service Created Successfully",
