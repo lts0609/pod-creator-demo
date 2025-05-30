@@ -51,16 +51,17 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 			return
 		}
 		klog.Infof("Creating service %s in namespace %s", service.Name, service.Namespace)
-		_, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
+		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
 			return
 		}
 
 		c.JSON(http.StatusCreated, gin.H{
-			"message":    "Deployment and Service Created Successfully",
-			"deployment": deployment,
-			"service":    service,
+			"Message":    "Deployment and Service Created Successfully",
+			"Deployment": deployment,
+			"Service":    service,
+			"NodePort":   service.Spec.Ports[0].Port,
 		})
 	}
 }

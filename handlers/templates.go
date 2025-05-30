@@ -13,7 +13,6 @@ import (
 )
 
 var SSHPort int32 = 22
-var ServiceNodePort int32 = 32001
 var InitContainerImage string = "containercloud-mirror.xaidc.com/library/alpine:3.20"
 
 const GenerateSshPwdScript = `sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
@@ -143,7 +142,6 @@ func GenerateServiceTemplate(req model.DeployCreateRequest) (*v1.Service, error)
 					TargetPort: intstr.IntOrString{
 						IntVal: SSHPort,
 					},
-					NodePort: ServiceNodePort,
 				},
 			},
 		},
