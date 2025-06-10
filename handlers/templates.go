@@ -13,7 +13,7 @@ import (
 )
 
 var SSHPort int32 = 22
-var InitContainerImage string = "containercloud-mirror.xaidc.com/library/alpine:3.20"
+var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
 
 const GenerateSshPwdScript = `sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 apk update && apk add --no-cache openssl
@@ -79,10 +79,10 @@ func GenerateDeploymentTemplateWithEnv(req model.DeployCreateRequest) (*appsv1.D
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        req.Name,
-			Namespace:   req.Namespace,
-			Labels:      labels,
-			Annotations: map[string]string{},
+			GenerateName: req.Name + "-",
+			Namespace:    req.Namespace,
+			Labels:       labels,
+			Annotations:  map[string]string{},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
