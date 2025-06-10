@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"pod-creator-demo/model"
+	"pod-creator-demo/utils"
 	"strconv"
 	"strings"
 )
@@ -166,6 +167,7 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 		return v1.PodTemplateSpec{}, fmt.Errorf("ParseLabels Error: %v", err)
 	}
 	labels["app"] = req.Name
+
 	sshVolume := v1.Volume{
 		Name: "ssh-password-volume",
 		VolumeSource: v1.VolumeSource{
@@ -189,6 +191,7 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 		},
 	}
 
+	password, hashedPassword, _ := utils.GenerateJupyterPassword()
 	enviroment := []v1.EnvVar{
 		{
 			Name: "POD_NAME",
@@ -201,6 +204,14 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 		{
 			Name:  "NB_PREFIX",
 			Value: "/notebook/$(POD_NAME)",
+		},
+		{
+			Name:  "NB_PASSWD",
+			Value: password,
+		},
+		{
+			Name:  "NB_HASHED_PASSWD",
+			Value: hashedPassword,
 		},
 	}
 
