@@ -13,7 +13,9 @@ import (
 )
 
 var SSHPort int32 = 22
-var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
+
+// var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
+var InitContainerImage = "containercloud-mirror.xaidc.com/library/alpine:3.20"
 
 const GenerateSshPwdScript = `sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 apk update && apk add --no-cache openssl
