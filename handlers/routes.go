@@ -7,4 +7,5 @@ import (
 
 func SetupRoutes(r *gin.Engine, client clientset.Interface) {
 	r.POST("/gpu-container/instance", CreateDeployInstanceHandler(client))
+	r.POST("/test", TestHandler(client))
 }
