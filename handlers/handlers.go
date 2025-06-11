@@ -59,7 +59,7 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
 
 		// Create Service
-		serviceTemplate, err := GenerateServiceTemplate(req)
+		serviceTemplate, err := GenerateServiceTemplate(req, deployment)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
@@ -117,7 +117,7 @@ func TestHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
 
 		// Create Service
-		serviceTemplate, err := GenerateServiceTemplate(req)
+		serviceTemplate, err := GenerateServiceTemplate(req, deployment)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
