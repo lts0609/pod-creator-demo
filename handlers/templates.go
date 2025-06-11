@@ -283,7 +283,7 @@ func GenerateSecretTemplate(req model.DeployCreateRequest, deployment *appsv1.De
 	return secret, nil
 }
 
-func GenerateServiceTemplate(req model.DeployCreateRequest) (*v1.Service, error) {
+func GenerateServiceTemplate(req model.DeployCreateRequest, deployment *appsv1.Deployment) (*v1.Service, error) {
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name + "-service",
@@ -291,6 +291,15 @@ func GenerateServiceTemplate(req model.DeployCreateRequest) (*v1.Service, error)
 			Labels: map[string]string{
 				"app":       req.Name,
 				"create-by": "mfy",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: appsv1.SchemeGroupVersion.String(),
+					Kind:       "Deployment",
+					Name:       deployment.Name,
+					UID:        deployment.UID,
+					Controller: new(bool),
+				},
 			},
 		},
 		Spec: v1.ServiceSpec{
