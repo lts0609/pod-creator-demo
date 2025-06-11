@@ -14,6 +14,8 @@ import (
 )
 
 var SSHPort int32 = 22
+var JupyterPort int32 = 8888
+var TestNodePort int32 = 30000
 
 // var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
 var InitContainerImage = "containercloud-mirror.xaidc.com/library/alpine:3.20"
@@ -193,8 +195,16 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 
 	enviroment := []v1.EnvVar{
 		{
+			Name: "POD_NAME",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
 			Name:  "NB_PREFIX",
-			Value: "/notebook/$(HOSTNAME)",
+			Value: "/notebook/$(POD_NAME)",
 		},
 	}
 
@@ -204,7 +214,11 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 		Ports: []v1.ContainerPort{
 			{
 				Name:          "ssh",
-				ContainerPort: 22,
+				ContainerPort: SSHPort,
+			},
+			{
+				Name:          "http",
+				ContainerPort: JupyterPort,
 			},
 		},
 		Resources: ParseResources(req.Resources),
@@ -239,7 +253,7 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 	}, nil
 }
 
-func GenerateSecretTemplate(req model.DeployCreateRequest) (*v1.Secret, error) {
+func GenerateSecretTemplate(req model.DeployCreateRequest, deployment *appsv1.Deployment) (*v1.Secret, error) {
 	password, hashedPassword, err := utils.GenerateJupyterPassword()
 	if err != nil {
 		return nil, fmt.Errorf("GenerateJupyterPassword Error: %v", err)
@@ -249,6 +263,15 @@ func GenerateSecretTemplate(req model.DeployCreateRequest) (*v1.Secret, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name + "-secret",
 			Namespace: req.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: appsv1.SchemeGroupVersion.String(),
+					Kind:       "Deployment",
+					Name:       deployment.Name,
+					UID:        deployment.UID,
+					Controller: new(bool),
+				},
+			},
 		},
 		Type: v1.SecretTypeOpaque,
 		Data: map[string][]byte{
@@ -282,6 +305,14 @@ func GenerateServiceTemplate(req model.DeployCreateRequest) (*v1.Service, error)
 					TargetPort: intstr.IntOrString{
 						IntVal: SSHPort,
 					},
+				},
+				{
+					Name: "http",
+					Port: JupyterPort,
+					TargetPort: intstr.IntOrString{
+						IntVal: JupyterPort,
+					},
+					NodePort: TestNodePort,
 				},
 			},
 		},
