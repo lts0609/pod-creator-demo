@@ -32,13 +32,13 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 
 		// Create Deployment
-		deployment, err := GenerateDeploymentTemplate(req)
+		deploymentTemplate, err := GenerateDeploymentTemplate(req)
 		if err != nil {
 			HandleError(c, "GenerateDeploymentTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		klog.Infof("Creating Deployment %s in Namespace %s", deployment.Name, deployment.Namespace)
-		_, err = client.AppsV1().Deployments(deployment.Namespace).Create(c.Request.Context(), deployment, metav1.CreateOptions{})
+
+		deployment, err := client.AppsV1().Deployments(deploymentTemplate.Namespace).Create(c.Request.Context(), deploymentTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Deployment Error", err, http.StatusBadRequest)
 			return
@@ -46,12 +46,12 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
 
 		// Create Secret
-		secret, err := GenerateSecretTemplate(req, deployment)
+		secretTemplate, err := GenerateSecretTemplate(req, deployment)
 		if err != nil {
 			HandleError(c, "GenerateSecretTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		_, err = client.CoreV1().Secrets(req.Namespace).Create(c.Request.Context(), secret, metav1.CreateOptions{})
+		secret, err := client.CoreV1().Secrets(secretTemplate.Namespace).Create(c.Request.Context(), secretTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Secret Error", err, http.StatusBadRequest)
 			return
@@ -59,12 +59,12 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
 
 		// Create Service
-		service, err := GenerateServiceTemplate(req)
+		serviceTemplate, err := GenerateServiceTemplate(req)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
+		service, err := client.CoreV1().Services(serviceTemplate.Namespace).Create(c.Request.Context(), serviceTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
 			return
@@ -91,12 +91,12 @@ func TestHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 
 		// Create Deployment
-		deployment, err := GenerateDeploymentTemplateWithEnv(req)
+		deploymentTemplate, err := GenerateDeploymentTemplateWithEnv(req)
 		if err != nil {
 			HandleError(c, "GenerateDeploymentTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		_, err = client.AppsV1().Deployments(deployment.Namespace).Create(c.Request.Context(), deployment, metav1.CreateOptions{})
+		deployment, err := client.AppsV1().Deployments(deploymentTemplate.Namespace).Create(c.Request.Context(), deploymentTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Deployment Error", err, http.StatusBadRequest)
 			return
@@ -104,12 +104,12 @@ func TestHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
 
 		// Create Secret
-		secret, err := GenerateSecretTemplate(req, deployment)
+		secretTemplate, err := GenerateSecretTemplate(req, deployment)
 		if err != nil {
 			HandleError(c, "GenerateSecretTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		_, err = client.CoreV1().Secrets(req.Namespace).Create(c.Request.Context(), secret, metav1.CreateOptions{})
+		secret, err := client.CoreV1().Secrets(secretTemplate.Namespace).Create(c.Request.Context(), secretTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Secret Error", err, http.StatusBadRequest)
 			return
@@ -117,12 +117,12 @@ func TestHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
 
 		// Create Service
-		service, err := GenerateServiceTemplate(req)
+		serviceTemplate, err := GenerateServiceTemplate(req)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
+		service, err := client.CoreV1().Services(serviceTemplate.Namespace).Create(c.Request.Context(), serviceTemplate, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
 			return
