@@ -63,44 +63,6 @@ func GenerateDeploymentTemplate(req model.DeployCreateRequest) (*appsv1.Deployme
 	return deployment, nil
 }
 
-func GenerateDeploymentTemplateWithEnv(req model.DeployCreateRequest) (*appsv1.Deployment, error) {
-	// 增加判空
-	replicas, err := ParseReplicas(req.Replicas)
-	if err != nil {
-		return nil, fmt.Errorf("ParseReplicas Error: %v", err)
-	}
-
-	labels, err := ParseLabels(req.Labels)
-	if err != nil {
-		return nil, fmt.Errorf("ParseLabels Error: %v", err)
-	}
-
-	podTemplate, err := GeneratePodTemplateWithEnv(req)
-	if err != nil {
-		return nil, fmt.Errorf("GeneratePodTemplate Error: %v", err)
-	}
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: req.Name + "-",
-			Namespace:    req.Namespace,
-			Labels:       labels,
-			Annotations:  map[string]string{},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": req.Name,
-				},
-			},
-			Template: podTemplate,
-		},
-	}
-
-	return deployment, nil
-}
-
 func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
 	labels, err := ParseLabels(req.Labels)
 	if err != nil {
@@ -161,6 +123,44 @@ func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, err
 	}, nil
 }
 
+func GenerateDeploymentTemplateWithEnv(req model.DeployCreateRequest) (*appsv1.Deployment, error) {
+	// 增加判空
+	replicas, err := ParseReplicas(req.Replicas)
+	if err != nil {
+		return nil, fmt.Errorf("ParseReplicas Error: %v", err)
+	}
+
+	labels, err := ParseLabels(req.Labels)
+	if err != nil {
+		return nil, fmt.Errorf("ParseLabels Error: %v", err)
+	}
+
+	podTemplate, err := GeneratePodTemplateWithEnv(req)
+	if err != nil {
+		return nil, fmt.Errorf("GeneratePodTemplate Error: %v", err)
+	}
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: req.Name + "-",
+			Namespace:    req.Namespace,
+			Labels:       labels,
+			Annotations:  map[string]string{},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": req.Name,
+				},
+			},
+			Template: podTemplate,
+		},
+	}
+
+	return deployment, nil
+}
+
 func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
 	labels, err := ParseLabels(req.Labels)
 	if err != nil {
@@ -191,27 +191,10 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 		},
 	}
 
-	password, hashedPassword, _ := utils.GenerateJupyterPassword()
 	enviroment := []v1.EnvVar{
 		{
-			Name: "POD_NAME",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
-					FieldPath: "metadata.labels['app']",
-				},
-			},
-		},
-		{
 			Name:  "NB_PREFIX",
-			Value: "/notebook/$(POD_NAME)",
-		},
-		{
-			Name:  "NB_PASSWD",
-			Value: password,
-		},
-		{
-			Name:  "NB_HASHED_PASSWD",
-			Value: hashedPassword,
+			Value: "/notebook/$(HOSTNAME)",
 		},
 	}
 
@@ -233,6 +216,15 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 			},
 		},
 		Env: enviroment,
+		EnvFrom: []v1.EnvFromSource{
+			{
+				SecretRef: &v1.SecretEnvSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: req.Name + "-secret",
+					},
+				},
+			},
+		},
 	}
 
 	return v1.PodTemplateSpec{
@@ -245,6 +237,27 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 			Volumes:        []v1.Volume{sshVolume},
 		},
 	}, nil
+}
+
+func GenerateSecretTemplate(req model.DeployCreateRequest) (*v1.Secret, error) {
+	password, hashedPassword, err := utils.GenerateJupyterPassword()
+	if err != nil {
+		return nil, fmt.Errorf("GenerateJupyterPassword Error: %v", err)
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name + "-secret",
+			Namespace: req.Namespace,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"NB_PASSWD":        password,
+			"NB_HASHED_PASSWD": hashedPassword,
+		},
+	}
+
+	return secret, nil
 }
 
 func GenerateServiceTemplate(req model.DeployCreateRequest) (*v1.Service, error) {

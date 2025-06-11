@@ -15,14 +15,22 @@ const (
 	UppercaseChars        = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-func GenerateJupyterPassword() (string, string, error) {
+// 哈希默认参数
+const (
+	memory      = 10240
+	iterations  = 1
+	parallelism = 8
+	keyLength   = 32
+)
+
+func GenerateJupyterPassword() ([]byte, []byte, error) {
 	password, err := GenerateRandomString(DefaultPasswordLength)
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 	hashedPassword, err := HashPasswordWithSalt(password)
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 	return password, hashedPassword, nil
 }
@@ -37,42 +45,34 @@ func GenerateRandomDigits(length int) (string, error) {
 	return string(bytes), nil
 }
 
-func GenerateRandomString(length int) (string, error) {
+func GenerateRandomString(length int) ([]byte, error) {
 	charset := Digits + LowercaseChars + UppercaseChars
 	bytes := make([]byte, length)
 
 	for i := 0; i < length; i++ {
 		char, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		bytes[i] = charset[char.Int64()]
 	}
 
-	return string(bytes), nil
+	return bytes, nil
 }
 
-func HashPasswordWithSalt(password string) (string, error) {
+func HashPasswordWithSalt(password []byte) ([]byte, error) {
 	salt := make([]byte, 16)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return "", err
+	if _, err := rand.Read(salt); err != nil {
+		return nil, err
 	}
 
-	// 默认参数
-	const (
-		memory      = 10240
-		iterations  = 1
-		parallelism = 8
-		keyLength   = 32
-	)
-	hash := argon2.IDKey([]byte(password), salt, iterations, memory, parallelism, keyLength)
-	return fmt.Sprintf(
+	hash := argon2.IDKey(password, salt, iterations, memory, parallelism, keyLength)
+	return []byte(fmt.Sprintf(
 		"argon2:$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s",
 		memory,
 		iterations,
 		parallelism,
 		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(hash),
-	), nil
+	)), nil
 }

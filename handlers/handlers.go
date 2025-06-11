@@ -45,13 +45,25 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
 
+		// Create Secret
+		secret, err := GenerateSecretTemplate(req)
+		if err != nil {
+			HandleError(c, "GenerateSecretTemplate Error", err, http.StatusBadRequest)
+			return
+		}
+		_, err = client.CoreV1().Secrets(req.Namespace).Create(c.Request.Context(), secret, metav1.CreateOptions{})
+		if err != nil {
+			HandleError(c, "Create Secret Error", err, http.StatusBadRequest)
+			return
+		}
+		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
+
 		// Create Service
 		service, err := GenerateServiceTemplate(req)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		klog.Infof("Creating Service %s in Namespace %s", service.Name, service.Namespace)
 		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
@@ -60,10 +72,7 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Service %s in Namespace %s Successfully", service.Name, service.Namespace)
 
 		c.JSON(http.StatusCreated, gin.H{
-			"Message":    "Deployment and Service Created Successfully",
-			"Deployment": deployment.Name,
-			"Service":    service.Name,
-			"NodePort":   service.Spec.Ports[0].NodePort,
+			"Message": "Deployment and Service Created Successfully",
 		})
 	}
 }
