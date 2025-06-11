@@ -104,13 +104,24 @@ func TestHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
 
+		// Create Secret
+		secret, err := GenerateSecretTemplate(req)
+		if err != nil {
+			HandleError(c, "GenerateSecretTemplate Error", err, http.StatusBadRequest)
+			return
+		}
+		_, err = client.CoreV1().Secrets(req.Namespace).Create(c.Request.Context(), secret, metav1.CreateOptions{})
+		if err != nil {
+			HandleError(c, "Create Secret Error", err, http.StatusBadRequest)
+			return
+		}
+
 		// Create Service
 		service, err := GenerateServiceTemplate(req)
 		if err != nil {
 			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
 			return
 		}
-		klog.Infof("Creating Service %s in Namespace %s", service.Name, service.Namespace)
 		service, err = client.CoreV1().Services(service.Namespace).Create(c.Request.Context(), service, metav1.CreateOptions{})
 		if err != nil {
 			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
