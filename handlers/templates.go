@@ -20,13 +20,6 @@ var TestNodePort int32 = 30000
 // var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
 var InitContainerImage = "containercloud-mirror.xaidc.com/library/alpine:3.20"
 
-const GenerateSshPwdScript = `sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-apk update && apk add --no-cache openssl
-PASSWORD=$(openssl rand -base64 12)
-echo "${PASSWORD}" > /home/ssh/ssh-password
-echo "NEW SSH PASSWORD: ${PASSWORD}"
-`
-
 func GenerateDeploymentTemplate(req model.DeployCreateRequest) (*appsv1.Deployment, error) {
 	// 增加判空
 	replicas, err := ParseReplicas(req.Replicas)
@@ -40,104 +33,6 @@ func GenerateDeploymentTemplate(req model.DeployCreateRequest) (*appsv1.Deployme
 	}
 
 	podTemplate, err := GeneratePodTemplate(req)
-	if err != nil {
-		return nil, fmt.Errorf("GeneratePodTemplate Error: %v", err)
-	}
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        req.Name,
-			Namespace:   req.Namespace,
-			Labels:      labels,
-			Annotations: map[string]string{},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": req.Name,
-				},
-			},
-			Template: podTemplate,
-		},
-	}
-
-	return deployment, nil
-}
-
-func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
-	labels, err := ParseLabels(req.Labels)
-	if err != nil {
-		return v1.PodTemplateSpec{}, fmt.Errorf("ParseLabels Error: %v", err)
-	}
-	labels["app"] = req.Name
-	sshVolume := v1.Volume{
-		Name: "ssh-password-volume",
-		VolumeSource: v1.VolumeSource{
-			EmptyDir: &v1.EmptyDirVolumeSource{},
-		},
-	}
-
-	initContainer := v1.Container{
-		Name:  "ssh-password-init",
-		Image: InitContainerImage,
-		Command: []string{
-			"/bin/sh",
-			"-c",
-		},
-		Args: []string{GenerateSshPwdScript},
-		VolumeMounts: []v1.VolumeMount{
-			{
-				Name:      "ssh-password-volume",
-				MountPath: "/home/ssh",
-			},
-		},
-	}
-
-	mainContainer := v1.Container{
-		Name:  req.Name,
-		Image: req.Image,
-		Ports: []v1.ContainerPort{
-			{
-				Name:          "ssh",
-				ContainerPort: 22,
-			},
-		},
-		Resources: ParseResources(req.Resources),
-		VolumeMounts: []v1.VolumeMount{
-			{
-				Name:      "ssh-password-volume",
-				MountPath: "/home/ssh",
-				ReadOnly:  true,
-			},
-		},
-	}
-
-	return v1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
-		},
-		Spec: v1.PodSpec{
-			InitContainers: []v1.Container{initContainer},
-			Containers:     []v1.Container{mainContainer},
-			Volumes:        []v1.Volume{sshVolume},
-		},
-	}, nil
-}
-
-func GenerateDeploymentTemplateWithEnv(req model.DeployCreateRequest) (*appsv1.Deployment, error) {
-	// 增加判空
-	replicas, err := ParseReplicas(req.Replicas)
-	if err != nil {
-		return nil, fmt.Errorf("ParseReplicas Error: %v", err)
-	}
-
-	labels, err := ParseLabels(req.Labels)
-	if err != nil {
-		return nil, fmt.Errorf("ParseLabels Error: %v", err)
-	}
-
-	podTemplate, err := GeneratePodTemplateWithEnv(req)
 	if err != nil {
 		return nil, fmt.Errorf("GeneratePodTemplate Error: %v", err)
 	}
@@ -163,37 +58,14 @@ func GenerateDeploymentTemplateWithEnv(req model.DeployCreateRequest) (*appsv1.D
 	return deployment, nil
 }
 
-func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
+func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
 	labels, err := ParseLabels(req.Labels)
 	if err != nil {
 		return v1.PodTemplateSpec{}, fmt.Errorf("ParseLabels Error: %v", err)
 	}
 	labels["app"] = req.Name
 
-	sshVolume := v1.Volume{
-		Name: "ssh-password-volume",
-		VolumeSource: v1.VolumeSource{
-			EmptyDir: &v1.EmptyDirVolumeSource{},
-		},
-	}
-
-	initContainer := v1.Container{
-		Name:  "ssh-password-init",
-		Image: InitContainerImage,
-		Command: []string{
-			"/bin/sh",
-			"-c",
-		},
-		Args: []string{GenerateSshPwdScript},
-		VolumeMounts: []v1.VolumeMount{
-			{
-				Name:      "ssh-password-volume",
-				MountPath: "/home/ssh",
-			},
-		},
-	}
-
-	enviroment := []v1.EnvVar{
+	env := []v1.EnvVar{
 		{
 			Name: "POD_NAME",
 			ValueFrom: &v1.EnvVarSource{
@@ -222,14 +94,7 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 			},
 		},
 		Resources: ParseResources(req.Resources),
-		VolumeMounts: []v1.VolumeMount{
-			{
-				Name:      "ssh-password-volume",
-				MountPath: "/home/ssh",
-				ReadOnly:  true,
-			},
-		},
-		Env: enviroment,
+		Env:       env,
 		EnvFrom: []v1.EnvFromSource{
 			{
 				SecretRef: &v1.SecretEnvSource{
@@ -246,9 +111,7 @@ func GeneratePodTemplateWithEnv(req model.DeployCreateRequest) (v1.PodTemplateSp
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
-			InitContainers: []v1.Container{initContainer},
-			Containers:     []v1.Container{mainContainer},
-			Volumes:        []v1.Volume{sshVolume},
+			Containers: []v1.Container{mainContainer},
 		},
 	}, nil
 }
@@ -275,6 +138,7 @@ func GenerateSecretTemplate(req model.DeployCreateRequest, deployment *appsv1.De
 		},
 		Type: v1.SecretTypeOpaque,
 		Data: map[string][]byte{
+			"SSH_PASSWORD":     password,
 			"NB_PASSWD":        password,
 			"NB_HASHED_PASSWD": hashedPassword,
 		},
@@ -290,7 +154,7 @@ func GenerateServiceTemplate(req model.DeployCreateRequest, deployment *appsv1.D
 			Namespace: req.Namespace,
 			Labels: map[string]string{
 				"app":       req.Name,
-				"create-by": "mfy",
+				"create-by": "mck",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -321,7 +185,7 @@ func GenerateServiceTemplate(req model.DeployCreateRequest, deployment *appsv1.D
 					TargetPort: intstr.IntOrString{
 						IntVal: JupyterPort,
 					},
-					NodePort: TestNodePort,
+					// NodePort: TestNodePort,
 				},
 			},
 		},

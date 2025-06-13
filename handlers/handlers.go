@@ -10,7 +10,7 @@ import (
 	"pod-creator-demo/model"
 )
 
-func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
+func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req model.DeployCreateRequest
 		klog.Errorf("Handle deploy create request")
@@ -20,78 +20,11 @@ func CreateDeployInstanceHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 		if err := req.Validae(); err != nil {
 			HandleError(c, "Validae request para,:", err, http.StatusBadRequest)
-			return
-		}
-
-		// Check if the Deployment already exists
-		_, err := client.AppsV1().Deployments(req.Namespace).Get(c.Request.Context(), req.Name, metav1.GetOptions{})
-		if err == nil {
-			err = fmt.Errorf("Deployment %s already exists", req.Name)
-			HandleError(c, "Object already exists", err, http.StatusBadRequest)
 			return
 		}
 
 		// Create Deployment
 		deploymentTemplate, err := GenerateDeploymentTemplate(req)
-		if err != nil {
-			HandleError(c, "GenerateDeploymentTemplate Error", err, http.StatusBadRequest)
-			return
-		}
-
-		deployment, err := client.AppsV1().Deployments(deploymentTemplate.Namespace).Create(c.Request.Context(), deploymentTemplate, metav1.CreateOptions{})
-		if err != nil {
-			HandleError(c, "Create Deployment Error", err, http.StatusBadRequest)
-			return
-		}
-		klog.Infof("Create Deployment %s in Namespace %s Successfully", deployment.Name, deployment.Namespace)
-
-		// Create Secret
-		secretTemplate, err := GenerateSecretTemplate(req, deployment)
-		if err != nil {
-			HandleError(c, "GenerateSecretTemplate Error", err, http.StatusBadRequest)
-			return
-		}
-		secret, err := client.CoreV1().Secrets(secretTemplate.Namespace).Create(c.Request.Context(), secretTemplate, metav1.CreateOptions{})
-		if err != nil {
-			HandleError(c, "Create Secret Error", err, http.StatusBadRequest)
-			return
-		}
-		klog.Infof("Create Secret %s in Namespace %s Successfully", secret.Name, secret.Namespace)
-
-		// Create Service
-		serviceTemplate, err := GenerateServiceTemplate(req, deployment)
-		if err != nil {
-			HandleError(c, "GenerateServiceTemplate Error", err, http.StatusBadRequest)
-			return
-		}
-		service, err := client.CoreV1().Services(serviceTemplate.Namespace).Create(c.Request.Context(), serviceTemplate, metav1.CreateOptions{})
-		if err != nil {
-			HandleError(c, "Create Service Error", err, http.StatusBadRequest)
-			return
-		}
-		klog.Infof("Create Service %s in Namespace %s Successfully", service.Name, service.Namespace)
-
-		c.JSON(http.StatusCreated, gin.H{
-			"Message": "Deployment and Service Created Successfully",
-		})
-	}
-}
-
-func TestHandler(client clientset.Interface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req model.DeployCreateRequest
-		klog.Errorf("Handle deploy create request")
-		if err := c.ShouldBindJSON(&req); err != nil {
-			HandleError(c, "Error binding request", err, http.StatusBadRequest)
-			return
-		}
-		if err := req.Validae(); err != nil {
-			HandleError(c, "Validae request para,:", err, http.StatusBadRequest)
-			return
-		}
-
-		// Create Deployment
-		deploymentTemplate, err := GenerateDeploymentTemplateWithEnv(req)
 		if err != nil {
 			HandleError(c, "GenerateDeploymentTemplate Error", err, http.StatusBadRequest)
 			return
