@@ -62,6 +62,8 @@ func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 		}
 		klog.Infof("Create Service %s in Namespace %s Successfully", service.Name, service.Namespace)
 
+		// TODO: Use Informer watch pods active, and patch Ingress with pod's env($NB_PREFIX)
+
 		c.JSON(http.StatusCreated, gin.H{
 			"Message":    "Deployment and Service Created Successfully",
 			"Deployment": deployment.Name,
