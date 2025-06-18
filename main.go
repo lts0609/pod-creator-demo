@@ -25,10 +25,14 @@ func main() {
 	if err != nil {
 		klog.Errorf("Failed to create client: %v", err)
 	}
+	config, err := clientBuilder.Config()
+	if err != nil {
+		klog.Errorf("Failed to get rest config: %v", err)
+	}
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	handlers.SetupRoutes(router, client)
+	handlers.SetupRoutes(router, client, config)
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: router,
