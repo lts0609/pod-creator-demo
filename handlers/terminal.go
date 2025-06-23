@@ -64,41 +64,30 @@ func (t TerminalSession) Next() *remotecommand.TerminalSize {
 func (t TerminalSession) Read(p []byte) (int, error) {
 	klog.Errorf("@@@ read session")
 	session := TerminalSessions.Get(t.Id)
-	klog.Errorf("@@@ line 1")
 	if session.TimeOut.Before(time.Now()) {
-		klog.Errorf("@@@ line 2")
 		_ = session.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(2, "the connection has been disconnected. Please reconnect"))
-		klog.Errorf("@@@ line 3")
 		return 0, errors.New("the connection has been disconnected. Please reconnect")
 	}
-	klog.Errorf("@@@ line 4")
 	TerminalSessions.Set(session.Id, session)
-	klog.Errorf("@@@ line 5")
 	_, message, err := session.wsConn.ReadMessage()
 	if err != nil {
-		klog.Errorf("@@@ line 6")
 		// Send terminated signal to process to avoid resource leak
 		return copy(p, END_OF_TRANSMISSION), err
 	}
 
 	var msg TerminalMessage
-	klog.Errorf("@@@ line 7")
 	if err := json.Unmarshal(message, &msg); err != nil {
 		return copy(p, END_OF_TRANSMISSION), err
 	}
 	switch msg.Op {
 	case "stdin":
-		klog.Errorf("@@@ line 8")
-		copy(p, msg.Data)
 		klog.Errorf("@@@ read from session id: %s", session.Id)
 		klog.Errorf("@@@ read data: %s", msg.Data)
-		return len(msg.Data), nil
+		return copy(p, msg.Data), nil
 	case "resize":
-		klog.Errorf("@@@ line 9")
 		session.SizeChan <- remotecommand.TerminalSize{Width: msg.Cols, Height: msg.Rows}
 		return 0, nil
 	default:
-		klog.Errorf("@@@ line 10")
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
 	}
 }
