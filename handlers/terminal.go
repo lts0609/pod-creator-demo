@@ -230,7 +230,6 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 		go WaitForTerminal(client, config, namespace, podname, sessionID, shell)
 		session.Bound <- nil
 		resp := TerminalResponse{ID: sessionID}
-		klog.Errorf("@@@ resp:", resp)
 		c.Set("terminal", resp)
 	}
 }
@@ -246,7 +245,6 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		Name(podName).
 		Namespace(namespace).
 		SubResource("exec")
-	klog.Errorf("@@@ startProcess1")
 	req.VersionedParams(&v1.PodExecOptions{
 		Command: cmd,
 		Stdin:   true,
@@ -254,14 +252,11 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		Stderr:  true,
 		TTY:     true,
 	}, scheme.ParameterCodec)
-	klog.Errorf("@@@ startProcess2")
 	klog.Errorf("@@@ req.URL is %v", req.URL())
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
 	if err != nil {
-		klog.Errorf("@@@ startProcess3 err")
 		return err
 	}
-	klog.Errorf("@@@ startProcess3")
 	ctx := context.Background()
 	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:             ptyHandler,
@@ -270,9 +265,7 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		TerminalSizeQueue: ptyHandler,
 		Tty:               true,
 	})
-	klog.Errorf("@@@ startProcess4")
 	if err != nil {
-		klog.Errorf("@@@ startProcess4 err")
 		return err
 	}
 
