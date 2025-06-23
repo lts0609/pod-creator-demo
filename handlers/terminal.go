@@ -8,20 +8,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
-	"k8s.io/klog/v2"
-	"log"
-	"net/http"
-	"sync"
-	"time"
-
 	"github.com/gorilla/websocket"
+	"io"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
+	"log"
+	"net/http"
+	"sync"
+	"time"
 )
 
 const END_OF_TRANSMISSION = "\u0004"
@@ -63,87 +62,72 @@ func (t TerminalSession) Next() *remotecommand.TerminalSize {
 // Read handles pty->process messages (stdin, resize)
 // Called in a loop from remotecommand as long as the process is running
 func (t TerminalSession) Read(p []byte) (int, error) {
-	klog.Errorf("!!! in Read")
+	klog.Errorf("@@@ read session")
 	session := TerminalSessions.Get(t.Id)
-	klog.Errorf("!!! line 1")
+	klog.Errorf("@@@ line 1")
 	if session.TimeOut.Before(time.Now()) {
-		klog.Errorf("!!! line 2")
+		klog.Errorf("@@@ line 2")
 		_ = session.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(2, "the connection has been disconnected. Please reconnect"))
+		klog.Errorf("@@@ line 3")
 		return 0, errors.New("the connection has been disconnected. Please reconnect")
 	}
-	klog.Errorf("!!! line 3")
+	klog.Errorf("@@@ line 4")
 	TerminalSessions.Set(session.Id, session)
-	klog.Errorf("!!! line 4")
+	klog.Errorf("@@@ line 5")
 	_, message, err := session.wsConn.ReadMessage()
 	if err != nil {
-		klog.Errorf("!!! line 5")
+		klog.Errorf("@@@ line 6")
 		// Send terminated signal to process to avoid resource leak
 		return copy(p, END_OF_TRANSMISSION), err
 	}
 
 	var msg TerminalMessage
-	klog.Errorf("!!! line 6")
+	klog.Errorf("@@@ line 7")
 	if err := json.Unmarshal(message, &msg); err != nil {
 		return copy(p, END_OF_TRANSMISSION), err
 	}
-
 	switch msg.Op {
 	case "stdin":
-		klog.Errorf("!!! line 7")
-		return copy(p, msg.Data), nil
+		klog.Errorf("@@@ line 8")
+		copy(p, msg.Data)
+		klog.Errorf("@@@ read from session id: %s", session.Id)
+		klog.Errorf("@@@ read data: %s", msg.Data)
+		return len(msg.Data), nil
 	case "resize":
-		klog.Errorf("!!! line 8")
+		klog.Errorf("@@@ line 9")
 		session.SizeChan <- remotecommand.TerminalSize{Width: msg.Cols, Height: msg.Rows}
 		return 0, nil
 	default:
+		klog.Errorf("@@@ line 10")
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
 	}
 }
 
-// Write handles process->pty stdout
-// Called from remotecommand whenever there is any output
 func (t TerminalSession) Write(p []byte) (int, error) {
-	klog.Errorf("!!! in Write")
+	klog.Errorf("@@@ write session")
 	session := TerminalSessions.Get(t.Id)
-	klog.Errorf("!!! line 1")
 	if session.TimeOut.Before(time.Now()) {
-		klog.Errorf("!!! line 2")
+		log.Printf("Session %s has timed out", session.Id)
 		_ = session.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(2, "the connection has been disconnected. Please reconnect"))
 		return 0, errors.New("the connection has been disconnected. Please reconnect")
 	}
-	klog.Errorf("!!! line 3")
+	klog.Errorf("@@@ write session to id: %s", session.Id)
 	TerminalSessions.Set(session.Id, session)
-	klog.Errorf("!!! line 4")
 	msg, err := json.Marshal(TerminalMessage{
 		Op:   "stdout",
 		Data: string(p),
 	})
+	klog.Errorf("@@@ write data: %s", string(p))
 	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
 		return 0, err
 	}
-	klog.Errorf("!!! msg is %v", msg)
-	klog.Errorf("!!! line 5")
+
 	if err = session.wsConn.WriteMessage(websocket.TextMessage, msg); err != nil {
+		log.Printf("Error writing message to WebSocket: %v", err)
 		return 0, err
 	}
 	return len(p), nil
-}
-
-// Toast can be used to send the user any OOB messages
-// hterm puts these in the center of the terminal
-func (t TerminalSession) Toast(p string) error {
-	msg, err := json.Marshal(TerminalMessage{
-		Op:   "toast",
-		Data: p,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err = t.wsConn.WriteMessage(websocket.TextMessage, msg); err != nil {
-		return err
-	}
-	return nil
 }
 
 // SessionMap stores a map of all TerminalSession objects and a lock to avoid concurrent conflict
@@ -154,7 +138,7 @@ type SessionMap struct {
 
 // Get return a given terminalSession by sessionId
 func (sm *SessionMap) Get(sessionId string) TerminalSession {
-	klog.Errorf("!!! in Get")
+	klog.Errorf("@@@ get session")
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	return sm.Sessions[sessionId]
@@ -162,7 +146,7 @@ func (sm *SessionMap) Get(sessionId string) TerminalSession {
 
 // Set store a TerminalSession to SessionMap
 func (sm *SessionMap) Set(sessionId string, session TerminalSession) {
-	klog.Errorf("!!! in Set")
+	klog.Errorf("@@@ set session")
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	session.TimeOut = time.Now().Add(SessionTerminalStoreTime * time.Minute)
@@ -173,7 +157,7 @@ func (sm *SessionMap) Set(sessionId string, session TerminalSession) {
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
-	klog.Errorf("!!! in Close")
+	klog.Errorf("@@@ Close session")
 	if _, ok := sm.Sessions[sessionId]; !ok {
 		return
 	}
@@ -209,7 +193,7 @@ var upgrader = websocket.Upgrader{
 // handleTerminalSession is Called by net/http for any new WebSocket connections
 func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		klog.Errorf("!!! in TerminalSessionHandler")
+		klog.Errorf("@@@ in TerminalSessionHandler")
 		podname := c.Query("name")
 		namespace := c.Query("namespace")
 		if podname == "" || namespace == "" {
@@ -222,6 +206,7 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 		if shell == "" {
 			shell = "sh"
 		}
+		fmt.Println("base params:", podname, namespace, shell)
 		upgrader := websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -232,13 +217,13 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "WebSocket failed to connect",
+				"error": "WebSocket 连接失败",
 			})
 			return
 		}
-		//defer conn.Close()
 
 		sessionID, err := GenTerminalSessionId()
+		fmt.Println("session id:", sessionID)
 		if err != nil {
 			return
 		}
@@ -251,11 +236,13 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 			TimeOut:  time.Now().Add(SessionTerminalStoreTime * time.Minute),
 		}
 		TerminalSessions.Set(sessionID, session)
-		go WaitForTerminal(client, config, namespace, podname, sessionID, shell)
-		resp := TerminalResponse{ID: sessionID}
-		session.Bound <- nil
-		c.Set("terminal", resp)
 
+		klog.Errorf("@@@ start WaitForTerminal")
+		go WaitForTerminal(client, config, namespace, podname, sessionID, shell)
+		session.Bound <- nil
+		resp := TerminalResponse{ID: sessionID}
+		klog.Errorf("@@@ resp:", resp)
+		c.Set("terminal", resp)
 	}
 }
 
@@ -264,13 +251,13 @@ type TerminalResponse struct {
 }
 
 func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string, namespace string, podName string, ptyHandler PtyHandler) error {
-	klog.Errorf("!!! in startProcess")
+	klog.Errorf("@@@ in startProcess")
 	req := k8sClient.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
 		Namespace(namespace).
 		SubResource("exec")
-
+	klog.Errorf("@@@ startProcess1")
 	req.VersionedParams(&v1.PodExecOptions{
 		Command: cmd,
 		Stdin:   true,
@@ -278,11 +265,14 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		Stderr:  true,
 		TTY:     true,
 	}, scheme.ParameterCodec)
-
+	klog.Errorf("@@@ startProcess2")
+	klog.Errorf("@@@ req.URL is %v", req.URL())
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
 	if err != nil {
+		klog.Errorf("@@@ startProcess3 err")
 		return err
 	}
+	klog.Errorf("@@@ startProcess3")
 	ctx := context.Background()
 	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:             ptyHandler,
@@ -291,7 +281,9 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		TerminalSizeQueue: ptyHandler,
 		Tty:               true,
 	})
+	klog.Errorf("@@@ startProcess4")
 	if err != nil {
+		klog.Errorf("@@@ startProcess4 err")
 		return err
 	}
 
@@ -321,22 +313,25 @@ func isValidShell(validShells []string, shell string) bool {
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the WebSocket connection to be opened by the client the session to be Bound in handleTerminalSession
 func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, namespace string, podName string, sessionId string, shell string) {
-	klog.Errorf("!!! in WaitForTerminal")
+	klog.Errorf("@@@ in WaitForTerminal")
+	klog.Errorf("@@@ sessionId:%v", sessionId)
 	select {
 	case <-TerminalSessions.Get(sessionId).Bound:
+		klog.Errorf("@@@ case WaitForTerminal")
 		close(TerminalSessions.Get(sessionId).Bound)
-		klog.Errorf("!!! in case1")
 		var err error
 		validShells := []string{shell}
 
 		if isValidShell(validShells, shell) {
 			cmd := []string{shell}
+			klog.Errorf("@@@ to startProcess")
 			err = startProcess(k8sClient, cfg, cmd, namespace, podName, TerminalSessions.Get(sessionId))
 		} else {
 			// No shell given or it was not valid: try some shells until one succeeds or all fail
 			// FIXME: if the first shell fails then the first keyboard event is lost
 			for _, testShell := range validShells {
 				cmd := []string{testShell}
+				klog.Errorf("@@@ find to startProcess")
 				if err = startProcess(k8sClient, cfg, cmd, namespace, podName, TerminalSessions.Get(sessionId)); err == nil {
 					break
 				}
