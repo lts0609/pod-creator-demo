@@ -209,6 +209,7 @@ var upgrader = websocket.Upgrader{
 // handleTerminalSession is Called by net/http for any new WebSocket connections
 func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		klog.Errorf("!!! in TerminalSessionHandler")
 		podname := c.Query("name")
 		namespace := c.Query("namespace")
 		if podname == "" || namespace == "" {
@@ -263,7 +264,7 @@ type TerminalResponse struct {
 }
 
 func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string, namespace string, podName string, ptyHandler PtyHandler) error {
-
+	klog.Errorf("!!! in startProcess")
 	req := k8sClient.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
@@ -320,10 +321,11 @@ func isValidShell(validShells []string, shell string) bool {
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the WebSocket connection to be opened by the client the session to be Bound in handleTerminalSession
 func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, namespace string, podName string, sessionId string, shell string) {
+	klog.Errorf("!!! in WaitForTerminal")
 	select {
 	case <-TerminalSessions.Get(sessionId).Bound:
 		close(TerminalSessions.Get(sessionId).Bound)
-
+		klog.Errorf("!!! in case1")
 		var err error
 		validShells := []string{shell}
 
