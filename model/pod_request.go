@@ -11,9 +11,10 @@ type DeployCreateRequest struct {
 }
 
 type Resources struct {
-	CPU    string `json:"cpu"`
-	Memory string `json:"memory"`
-	GPU    string `json:"gpu"`
+	CPU     string `json:"cpu"`
+	Memory  string `json:"memory"`
+	GPU     string `json:"gpu"`
+	GPUType string `json:"gpu_type"`
 }
 
 func (p *DeployCreateRequest) Validae() error {

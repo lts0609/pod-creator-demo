@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -8,6 +9,7 @@ import (
 	"k8s.io/klog/v2"
 	"net/http"
 	"pod-creator-demo/model"
+	"strconv"
 )
 
 func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
@@ -63,12 +65,36 @@ func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 		klog.Infof("Create Service %s in Namespace %s Successfully", service.Name, service.Namespace)
 
 		// TODO: Use Informer watch pods active, and patch Ingress with pod's env($NB_PREFIX)
+		selector := metav1.FormatLabelSelector(deployment.Spec.Selector)
+		pods, err := client.CoreV1().Pods(req.Namespace).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: selector,
+		})
+		var jupyterPath string
+		for _, pod := range pods.Items {
+			for _, container := range pod.Spec.Containers {
+				for _, env := range container.Env {
+					if env.Name == "NB_PREFIX" {
+						jupyterPath = env.Value
+					}
+				}
+			}
+		}
+
+		var sshPort string
+		ports := service.Spec.Ports
+		for _, port := range ports {
+			if port.Name == "ssh" {
+				sshPort = strconv.Itoa(int(port.NodePort))
+			}
+		}
 
 		c.JSON(http.StatusCreated, gin.H{
-			"Message":    "Deployment and Service Created Successfully",
-			"Deployment": deployment.Name,
-			"Service":    service.Name,
-			"NodePort":   service.Spec.Ports[0].NodePort,
+			"Message":      "Deployment and Service Created Successfully",
+			"Deployment":   deployment.Name,
+			"Service":      service.Name,
+			"SSHPort":      sshPort,
+			"JupyterPath":  jupyterPath,
+			"InitPassword": secret.Data["password"],
 		})
 	}
 }

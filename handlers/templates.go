@@ -16,6 +16,8 @@ import (
 var SSHPort int32 = 22
 var JupyterPort int32 = 8888
 var TestNodePort int32 = 30000
+var GPUContainerLabel = "mfy.com/gpu-container"
+var GPUtypeLabel = "mfy.com/gpu-type"
 
 // var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
 var InitContainerImage = "containercloud-mirror.xaidc.com/library/alpine:3.20"
@@ -112,6 +114,10 @@ func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, err
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{mainContainer},
+			NodeSelector: map[string]string{
+				GPUContainerLabel: "true",
+				GPUtypeLabel:      req.Resources.GPUType,
+			},
 		},
 	}, nil
 }
