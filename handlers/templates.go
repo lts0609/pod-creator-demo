@@ -18,6 +18,7 @@ var JupyterPort int32 = 8888
 var TestNodePort int32 = 30000
 var GPUContainerLabel = "mfy.com/gpu-container"
 var GPUtypeLabel = "mfy.com/gpu-type"
+var DeafultDomain = "containercloud.xaidc.com"
 
 // var InitContainerImage = "m.daocloud.io/docker.io/alpine:3.18"
 var InitContainerImage = "containercloud-mirror.xaidc.com/library/alpine:3.20"
@@ -29,7 +30,7 @@ func GenerateDeploymentTemplate(req model.DeployCreateRequest) (*appsv1.Deployme
 		return nil, fmt.Errorf("ParseReplicas Error: %v", err)
 	}
 
-	labels, err := ParseLabels(req.Labels)
+	labels, err := ParseLabels(req.Name, req.Labels)
 	if err != nil {
 		return nil, fmt.Errorf("ParseLabels Error: %v", err)
 	}
@@ -61,7 +62,7 @@ func GenerateDeploymentTemplate(req model.DeployCreateRequest) (*appsv1.Deployme
 }
 
 func GeneratePodTemplate(req model.DeployCreateRequest) (v1.PodTemplateSpec, error) {
-	labels, err := ParseLabels(req.Labels)
+	labels, err := ParseLabels(req.Name, req.Labels)
 	if err != nil {
 		return v1.PodTemplateSpec{}, fmt.Errorf("ParseLabels Error: %v", err)
 	}
@@ -241,11 +242,13 @@ func ParseResources(res model.Resources) v1.ResourceRequirements {
 	return requirements
 }
 
-func ParseLabels(labelSpec string) (map[string]string, error) {
-	if len(labelSpec) == 0 {
-		return nil, fmt.Errorf("no label spec passed")
-	}
+func ParseLabels(name, labelSpec string) (map[string]string, error) {
 	labels := map[string]string{}
+	if len(labelSpec) == 0 {
+		labels["app"] = name
+		return labels, nil
+	}
+
 	labelSpecs := strings.Split(labelSpec, ",")
 	for ix := range labelSpecs {
 		labelSpec := strings.Split(labelSpecs[ix], "=")

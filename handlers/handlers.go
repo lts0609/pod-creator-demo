@@ -73,22 +73,28 @@ func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 		jupyterPath = ("notebook/" + pod.Items[0].Name)
 		fmt.Println("jupyterPath", jupyterPath)
 
-		var sshPort string
+		var sshPort, jupyterPort string
 		ports := service.Spec.Ports
 		for _, port := range ports {
 			if port.Name == "ssh" {
 				sshPort = strconv.Itoa(int(port.NodePort))
 			}
+			if port.Name == "jupyter" {
+				jupyterPort = strconv.Itoa(int(port.NodePort))
+			}
 		}
 
+		var ssh_domain, jupyter_domain string
+		ssh_domain = DeafultDomain
+		jupyter_domain = "http://" + DeafultDomain + ":" + jupyterPort + "/" + jupyterPath
 		c.JSON(http.StatusCreated, gin.H{
-			"Message":      "Deployment and Service Created Successfully",
-			"Deployment":   deployment.Name,
-			"Service":      service.Name,
-			"SSHPort":      sshPort,
-			"SSHUser":      "jovyan",
-			"JupyterPath":  jupyterPath,
-			"InitPassword": secret.Data["SSH_PASSWORD"],
+			"Message":       "Deployment and Service Created Successfully",
+			"Deployment":    deployment.Name,
+			"SSHDomain":     ssh_domain,
+			"SSHPort":       sshPort,
+			"SSHUser":       "jovyan",
+			"JupyterDomain": jupyter_domain,
+			"InitPassword":  secret.Data["SSH_PASSWORD"],
 		})
 	}
 }
