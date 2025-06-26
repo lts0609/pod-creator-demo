@@ -66,19 +66,12 @@ func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 
 		// TODO: Use Informer watch pods active, and patch Ingress with pod's env($NB_PREFIX)
 		selector := metav1.FormatLabelSelector(deployment.Spec.Selector)
-		pods, err := client.CoreV1().Pods(req.Namespace).List(context.TODO(), metav1.ListOptions{
+		pod, err := client.CoreV1().Pods(req.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector,
 		})
 		var jupyterPath string
-		for _, pod := range pods.Items {
-			for _, container := range pod.Spec.Containers {
-				for _, env := range container.Env {
-					if env.Name == "NB_PREFIX" {
-						jupyterPath = env.Value
-					}
-				}
-			}
-		}
+		jupyterPath = ("notebook/" + pod.Items[0].Name)
+		fmt.Println("jupyterPath", jupyterPath)
 
 		var sshPort string
 		ports := service.Spec.Ports
@@ -93,8 +86,9 @@ func CreateRequestHandler(client clientset.Interface) gin.HandlerFunc {
 			"Deployment":   deployment.Name,
 			"Service":      service.Name,
 			"SSHPort":      sshPort,
+			"SSHUser":      "jovyan",
 			"JupyterPath":  jupyterPath,
-			"InitPassword": secret.Data["password"],
+			"InitPassword": secret.Data["SSH_PASSWORD"],
 		})
 	}
 }
