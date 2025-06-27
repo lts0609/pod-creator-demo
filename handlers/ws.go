@@ -29,6 +29,7 @@ func WSConnectHandler(c *gin.Context) {
 			return true
 		},
 	}
+	log.Printf("!!!! 000")
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -36,23 +37,27 @@ func WSConnectHandler(c *gin.Context) {
 		})
 		return
 	}
+	log.Printf("!!!! 111")
 	_, buf, err = conn.ReadMessage()
 	if err != nil {
 		log.Printf("handleTerminalSession: can't read message from session '%s': %v", sessionID, err)
 		return
 	}
-
+	log.Printf("!!!! 222")
 	if err = json.Unmarshal(buf, &msg); err != nil {
 		log.Printf("handleTerminalSession: can't UnMarshal (%v): %s", err, buf)
 		return
 	}
-
+	log.Printf("!!!! 333")
 	if msg.Op != "bind" {
 		log.Printf("handleTerminalSession: expected 'bind' message, got: %s", buf)
 		return
 	}
+	log.Printf("!!!! 444")
 	terminalSession = session
+	log.Printf("!!!! 555")
 	terminalSession.wsConn = conn
 	TerminalSessions.Set(sessionID, terminalSession)
 	terminalSession.Bound <- nil
+	log.Printf("!!!! 666")
 }
