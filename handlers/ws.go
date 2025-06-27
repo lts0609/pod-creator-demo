@@ -36,7 +36,7 @@ func WSConnectHandler(c *gin.Context) {
 		})
 		return
 	}
-	_, buf, err = session.wsConn.ReadMessage()
+	_, buf, err = conn.ReadMessage()
 	if err != nil {
 		log.Printf("handleTerminalSession: can't read message from session '%s': %v", sessionID, err)
 		return
@@ -51,6 +51,7 @@ func WSConnectHandler(c *gin.Context) {
 		log.Printf("handleTerminalSession: expected 'bind' message, got: %s", buf)
 		return
 	}
+	terminalSession = session
 	terminalSession.wsConn = conn
 	TerminalSessions.Set(sessionID, terminalSession)
 	terminalSession.Bound <- nil
