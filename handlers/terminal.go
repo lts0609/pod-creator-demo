@@ -170,17 +170,8 @@ func (sm *SessionMap) Clean() {
 
 var TerminalSessions = SessionMap{Sessions: make(map[string]TerminalSession)}
 
-// 定义 WebSocket 升级器
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 // handleTerminalSession is Called by net/http for any new WebSocket connections
-func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin.HandlerFunc {
+func TerminalHandler(client clientset.Interface, config *rest.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		klog.Errorf("@@@ in TerminalSessionHandler")
 		podname := c.Query("name")
@@ -196,20 +187,6 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 			shell = "sh"
 		}
 		fmt.Println("base params:", podname, namespace, shell)
-		upgrader := websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		}
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "WebSocket 连接失败",
-			})
-			return
-		}
 
 		sessionID, err := GenTerminalSessionId()
 		fmt.Println("session id:", sessionID)
@@ -218,7 +195,6 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 		}
 		session := TerminalSession{
 			Id:       sessionID,
-			wsConn:   conn,
 			Bound:    make(chan error, 1),
 			SizeChan: make(chan remotecommand.TerminalSize, 10),
 			doneChan: make(chan struct{}),
@@ -228,9 +204,8 @@ func TerminalSessionHandler(client clientset.Interface, config *rest.Config) gin
 
 		klog.Errorf("@@@ start WaitForTerminal")
 		go WaitForTerminal(client, config, namespace, podname, sessionID, shell)
-		session.Bound <- nil
 		resp := TerminalResponse{ID: sessionID}
-		c.Set("terminal", resp)
+		c.Set("data", resp)
 	}
 }
 
