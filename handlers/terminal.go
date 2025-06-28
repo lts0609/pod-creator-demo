@@ -127,7 +127,6 @@ type SessionMap struct {
 
 // Get return a given terminalSession by sessionId
 func (sm *SessionMap) Get(sessionId string) TerminalSession {
-	klog.Errorf("@@@ get session")
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	return sm.Sessions[sessionId]
