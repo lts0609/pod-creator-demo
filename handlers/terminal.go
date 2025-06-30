@@ -81,7 +81,6 @@ func (t TerminalSession) Read(p []byte) (int, error) {
 	}
 	switch msg.Op {
 	case "stdin":
-		klog.Errorf("@@@ read from session id: %s", session.Id)
 		klog.Errorf("@@@ read data: %s", msg.Data)
 		return copy(p, msg.Data), nil
 	case "resize":
@@ -100,7 +99,6 @@ func (t TerminalSession) Write(p []byte) (int, error) {
 		_ = session.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(2, "the connection has been disconnected. Please reconnect"))
 		return 0, errors.New("the connection has been disconnected. Please reconnect")
 	}
-	klog.Errorf("@@@ write session to id: %s", session.Id)
 	TerminalSessions.Set(session.Id, session)
 	msg, err := json.Marshal(TerminalMessage{
 		Op:   "stdout",
@@ -134,7 +132,6 @@ func (sm *SessionMap) Get(sessionId string) TerminalSession {
 
 // Set store a TerminalSession to SessionMap
 func (sm *SessionMap) Set(sessionId string, session TerminalSession) {
-	klog.Errorf("@@@ set session")
 	sm.Lock.Lock()
 	defer sm.Lock.Unlock()
 	session.TimeOut = time.Now().Add(SessionTerminalStoreTime * time.Minute)
@@ -145,7 +142,7 @@ func (sm *SessionMap) Set(sessionId string, session TerminalSession) {
 // Can happen if the process exits or if there is an error starting up the process
 // For now the status code is unused and reason is shown to the user (unless "")
 func (sm *SessionMap) Close(sessionId string, status uint32, reason string) {
-	klog.Errorf("@@@ Close session")
+	klog.Errorf("@@@ Close session %s", sessionId)
 	if _, ok := sm.Sessions[sessionId]; !ok {
 		return
 	}
