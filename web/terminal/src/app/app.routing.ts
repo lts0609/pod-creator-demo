@@ -1,7 +1,6 @@
 import {Routes} from '@angular/router';
 import {AppComponent} from "./app.component";
 import {TerminalComponent} from "./terminal/terminal.component";
-import {LoggingComponent} from "./logging/logging.component";
 
 
 export const routes: Routes = [
