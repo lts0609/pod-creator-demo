@@ -13,7 +13,7 @@ export class TerminalService {
 
   createTerminalSession(namespace: string, podName: string, shell: string): Observable<any> {
     const url = function () {
-      let baseUrl = `/terminals/podName=${podName}&&shell=${shell}`
+      let baseUrl = `/terminals?podName=${podName}&&shell=${shell}`
       if (namespace) {
         baseUrl = `${baseUrl}&&namespace=${namespace}`
       }
