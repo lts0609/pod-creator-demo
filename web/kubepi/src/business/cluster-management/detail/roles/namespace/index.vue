@@ -1,0 +1,386 @@
+<template>
+  <layout-content>
+    <div style="float: left; margin-bottom: 20px">
+      <el-button type="primary" size="small" @click="onCreate">{{ $t("commons.button.create") }}</el-button>
+      <el-button :disabled="selects.length===0" type="primary" size="small" @click="onDelete()">{{ $t("commons.button.delete") }}</el-button>
+    </div>
+
+    <complex-table :data="data" :selects.sync="selects">
+      <el-table-column type="selection" :selectable="isBuildIn" fix></el-table-column>
+      <el-table-column :label="$t('commons.table.name')" min-width="100" fix show-overflow-tooltip>
+        <template v-slot:default="{row}">
+          <span class="span-link" @click="onOpenDetail(row)">{{ row.metadata.name }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column :label="$t('commons.table.description')" min-width="100" fix>
+        <template v-slot:default="{row}">
+          {{ $t(row.metadata.annotations["description"]) }}
+        </template>
+      </el-table-column>
+
+      <el-table-column :label="$t('commons.table.built_in')" min-width="100" fix>
+        <template v-slot:default="{row}">
+          {{ $t('commons.bool.' + row.metadata.annotations["builtin"]) }}
+        </template>
+      </el-table-column>
+      <el-table-column :label="$t('commons.table.age')" min-width="100" fix>
+        <template v-slot:default="{row}">
+          {{ row.metadata.annotations["created-at"] | ageFormat }}
+        </template>
+      </el-table-column>
+      <fu-table-operations :buttons="buttons" :label="$t('commons.table.action')" fix />
+    </complex-table>
+
+    <el-dialog :title="$t(formTitle)+$t('business.cluster.role')" :visible.sync="clusterRoleFormDialogOpened" width="70%" center :close-on-click-modal="false" z-index="10">
+
+      <el-form :model="clusterRoleForm" label-position="left" label-width="144px">
+        <el-form-item :label="$t('commons.table.name')">
+          <el-input v-model="clusterRoleForm.name" style="width: 80%"></el-input>
+        </el-form-item>
+
+        <el-form-item :label="$t('commons.table.description')">
+          <el-input v-model="clusterRoleForm.description" style="width: 80%"></el-input>
+        </el-form-item>
+
+        <el-form-item :label="$t('business.cluster.rule')">
+          <el-button @click="onRuleCreate"><i class="el-icon-plus "></i></el-button>
+          <table border="1" cellspacing="0" style="width: 80%">
+            <thead style="background-color: #1d3e4d">
+              <tr>
+                <th style="width: 30%">{{ $t('business.cluster.api_group') }}</th>
+                <th style="width: 30%">{{ $t('business.cluster.resource') }}</th>
+                <th style="width: 30%">{{ $t('business.cluster.verb') }}</th>
+                <th>{{ $t('commons.table.action') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="clusterRoleForm.rules.length===0">
+                <td style="text-align: center" colspan="4">{{ $t('commons.msg.no_data') }}</td>
+              </tr>
+              <tr v-for="(item,index) in clusterRoleForm.rules" :key="index">
+                <td style="text-align: center">
+                  <el-select @change="loadResources(item)" v-model="item.apiGroups" filterable style="width: 100%" multiple>
+                    <el-option v-for="(groupName,index) in groups" :key="index" :value="groupName">
+                      {{ groupName }}
+                    </el-option>
+                  </el-select>
+                </td>
+                <td>
+                  <el-select @change="loadVerbs(item)" multiple v-model="item.resources" filterable style="width:100%">
+                    <el-option v-for="(item,index) in item.resourceOptions" :key="index" :value="item">
+                      {{ item }}
+                    </el-option>
+                  </el-select>
+                </td>
+                <td>
+                  <el-select multiple v-model="item.verbs" filterable style="width:100%">
+                    <el-option v-for="(item,index) in item.verbOptions" :key="index" :value="item">
+                      {{ item }}
+                    </el-option>
+                  </el-select>
+                </td>
+                <td>
+                  <el-button icon="el-icon-delete" size="mini" @click="onRuleDelete(index)" circle></el-button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </el-form-item>
+      </el-form>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="clusterRoleFormDialogOpened = false">{{ $t('commons.button.cancel') }}</el-button>
+        <el-button type="primary" @click="onConfirm">{{ $t('commons.button.confirm') }}</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog :title="$t('business.cluster.role')" :visible.sync="clusterDetailDialogOpened" width="70%" center z-index="10">
+      <el-form :model="detailForm" label-position="left" label-width="144px">
+        <el-form-item :label="$t('commons.table.name')">
+          {{ detailForm.name }}
+        </el-form-item>
+
+        <el-form-item :label="$t('business.cluster.rule')">
+          <table border="1" cellspacing="0" style="width: 80%">
+            <thead style="background-color: #1d3e4d">
+              <tr>
+                <th style="width: 30%">{{ $t('business.cluster.api_group') }}</th>
+                <th style="width: 30%">{{ $t('business.cluster.resource') }}</th>
+                <th style="width: 30%">{{ $t('business.cluster.verb') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="detailForm.rules.length===0">
+                <td style="text-align: center" colspan="4">{{ $t('commons.msg.no_data') }}</td>
+              </tr>
+              <tr v-for="(item,index) in detailForm.rules" :key="index">
+                <td style="text-align: center">
+                  {{ item.apiGroups }}
+                </td>
+                <td style="text-align: center">
+                  {{ item.resources }}
+                </td>
+                <td style="text-align: center">
+                  {{ item.verbs }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </el-form-item>
+      </el-form>
+
+    </el-dialog>
+
+  </layout-content>
+</template>
+
+<script>
+import LayoutContent from "@/components/layout/LayoutContent"
+import ComplexTable from "@/components/complex-table"
+import { listClusterRoles, createClusterRole, deleteClusterRole, updateClusterRole, listClusterApiGroups } from "@/api/clusters"
+
+export default {
+  name: "ClusterRoles",
+  props: ["name"],
+  components: { LayoutContent, ComplexTable },
+  data() {
+    return {
+      clusterRoleFormDialogOpened: false,
+      clusterDetailDialogOpened: false,
+      operation: "create",
+      clusterRoleForm: {
+        name: "",
+        description: "",
+        rules: [],
+      },
+      detailForm: {
+        name: "",
+        rules: [],
+      },
+      buttons: [
+        {
+          label: this.$t("commons.button.edit"),
+          icon: "el-icon-edit",
+          click: (row) => {
+            this.onEdit(row)
+          },
+          disabled: (row) => {
+            return row.metadata.annotations["builtin"] === "true"
+          },
+        },
+        {
+          label: this.$t("commons.button.delete"),
+          icon: "el-icon-delete",
+          click: (row) => {
+            this.onDelete(row)
+          },
+          disabled: (row) => {
+            return row.metadata.annotations["builtin"] === "true"
+          },
+        },
+      ],
+      data: [],
+      selects: [],
+      groupRootData: [],
+      groups: [],
+    }
+  },
+  computed: {
+    formTitle() {
+      return `commons.button.${this.operation}`
+    },
+  },
+  methods: {
+    isBuildIn(row) {
+      return !(row.metadata.annotations["builtin"] === "true")
+    },
+    list() {
+      this.loading = false
+      listClusterRoles(this.name, "namespace").then((data) => {
+        this.loading = false
+        this.data = data.data
+      })
+    },
+
+    onOpenDetail(item) {
+      this.detailForm = {
+        name: item.metadata.name,
+        rules: item.rules,
+      }
+      for (const rule of this.detailForm.rules) {
+        for (let i = 0; i < rule.apiGroups.length; i++) {
+          if (rule.apiGroups[i] === "") {
+            rule.apiGroups[i] = "core"
+          }
+        }
+      }
+      this.clusterDetailDialogOpened = true
+    },
+
+    onCreate() {
+      this.operation = "create"
+      this.clusterRoleForm = {
+        name: "",
+        rules: [],
+      }
+      this.clusterRoleFormDialogOpened = true
+    },
+
+    loadGroups() {
+      listClusterApiGroups(this.name, "namespace").then((res) => {
+        this.groupRootData = res.data
+        this.groups = []
+        if (res.success) {
+          for (const g of res.data) {
+            this.groups.push(g.group === "" ? "core" : g.group)
+          }
+        }
+      })
+    },
+    loadResources(row) {
+      let resources = []
+      for (const currentGroup of row.apiGroups) {
+        let currentG = currentGroup === "core" ? "" : currentGroup
+        for (const group of this.groupRootData) {
+          if (currentG == group.group) {
+            for (const resource of group.resources) {
+              resources.push(resource.resource)
+            }
+          }
+        }
+      }
+      let map = new Map()
+      row.resourceOptions = resources.filter((key) => !map.has(key) && map.set(key, 1))
+    },
+    loadVerbs(row) {
+      let verbs = []
+      for (const currentResouce of row.resources) {
+        for (const group of this.groupRootData) {
+          for (const resource of group.resources) {
+            if (currentResouce == resource.resource) {
+              verbs = resource.verbs
+            }
+          }
+        }
+      }
+      verbs.unshift("*")
+      let map = new Map()
+      row.verbOptions = verbs.filter((key) => !map.has(key) && map.set(key, 1))
+    },
+
+    onRuleDelete(index) {
+      this.clusterRoleForm.rules.splice(index, 1)
+    },
+    onRuleCreate() {
+      for (const nr of this.clusterRoleForm.rules) {
+        if (nr.apiGroups.length === 0 || nr.resources.length === 0 || nr.verbs.length === 0) {
+          this.$message.error(this.$t("business.cluster.namespace_role_form_check_msg"))
+          return
+        }
+      }
+      this.clusterRoleForm.rules.push({
+        apiGroups: [],
+        resources: [],
+        verbs: [],
+      })
+    },
+    onEdit(row) {
+      this.operation = "edit"
+      this.clusterRoleForm.name = row.metadata.name
+      this.clusterRoleForm.rules = []
+      for (const rule of row.rules) {
+        const r = {
+          apiGroups: [],
+          resources: rule.resources,
+          verbs: rule.verbs,
+          resourceOptions: [],
+          verbOptions: [],
+        }
+        for (const g of rule.apiGroups) {
+          r.apiGroups.push(g === "" ? "core" : g)
+        }
+        this.loadResources(r)
+        this.loadVerbs(r)
+        this.clusterRoleForm.rules.push(r)
+      }
+      this.clusterRoleFormDialogOpened = true
+    },
+    onDelete(row) {
+      this.$confirm(this.$t("commons.confirm_message.delete"), this.$t("commons.message_box.alert"), {
+        confirmButtonText: this.$t("commons.button.confirm"),
+        cancelButtonText: this.$t("commons.button.cancel"),
+        type: "warning",
+      }).then(() => {
+        this.ps = []
+        if (row) {
+          this.ps.push(deleteClusterRole(this.name, row.metadata.name))
+        } else {
+          if (this.selects.length > 0) {
+            for (const select of this.selects) {
+              this.ps.push(deleteClusterRole(this.name, select.metadata.name))
+            }
+          }
+        }
+        if (this.ps.length !== 0) {
+          Promise.all(this.ps)
+            .then(() => {
+              this.list()
+              this.$message({
+                type: "success",
+                message: this.$t("commons.msg.delete_success"),
+              })
+            })
+            .catch(() => {
+              this.list()
+            })
+        }
+      })
+    },
+    onConfirm() {
+      const req = {
+        metadata: {
+          name: this.clusterRoleForm.name,
+          annotations: {
+            description: this.clusterRoleForm.description,
+          },
+          labels: {
+            "kubepi.org/role-type": "namespace",
+          },
+        },
+        rules: [],
+      }
+      for (const rule of this.clusterRoleForm.rules) {
+        req.rules.push({
+          apiGroups: rule.apiGroups,
+          resources: rule.resources,
+          verbs: rule.verbs,
+        })
+      }
+      switch (this.operation) {
+        case "create":
+          createClusterRole(this.name, req).then(() => {
+            this.list()
+            this.clusterRoleFormDialogOpened = false
+            this.$message.success(this.$t("commons.msg.create_success"))
+          })
+          break
+        case "edit":
+          updateClusterRole(this.name, this.clusterRoleForm.name, req).then(() => {
+            this.list()
+            this.clusterRoleFormDialogOpened = false
+            this.$message.success(this.$t("commons.msg.update_success"))
+          })
+          break
+      }
+    },
+  },
+  created() {
+    this.loadGroups()
+    this.list()
+  },
+}
+</script>
+
+<style scoped>
+</style>

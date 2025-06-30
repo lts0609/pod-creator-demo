@@ -1,0 +1,71 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 2880763 */
+  src: url('iconfont.woff2?t=1637146310196') format('woff2'),
+       url('iconfont.woff?t=1637146310196') format('woff'),
+       url('iconfont.ttf?t=1637146310196') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.iconjingxiangcangku:before {
+  content: "\e73a";
+}
+
+.iconyonghuguanli:before {
+  content: "\e615";
+}
+
+.iconxitongrizhi:before {
+  content: "\e613";
+}
+
+.iconbangzhu1:before {
+  content: "\e61c";
+}
+
+.iconmarket:before {
+  content: "\e60a";
+}
+
+.iconaccesscontrol:before {
+  content: "\e60b";
+}
+
+.iconnamesapce:before {
+  content: "\e7bb";
+}
+
+.iconkubernets:before {
+  content: "\e62d";
+}
+
+.icongailan:before {
+  content: "\e631";
+}
+
+.iconconfiguration:before {
+  content: "\e78b";
+}
+
+.iconnetwork:before {
+  content: "\e6d9";
+}
+
+.iconstorage:before {
+  content: "\e6c5";
+}
+
+.iconline-terminalzhongduan:before {
+  content: "\e6f3";
+}
+
+.iconworkload:before {
+  content: "\e639";
+}
+
