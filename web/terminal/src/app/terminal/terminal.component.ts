@@ -21,11 +21,9 @@ export class TerminalComponent implements AfterViewInit {
   @ViewChild('anchor', {static: true}) anchorRef: ElementRef;
   term: Terminal;
   podName: string;
-  container: string;
   shell: string;
 
   private readonly namespace_: string
-  clusterName: string;
   private connecting_: boolean
   private connectionClosed_: boolean
   private conn_: WebSocket
@@ -43,16 +41,14 @@ export class TerminalComponent implements AfterViewInit {
               private _router: Router,
               private terminalService: TerminalService
   ) {
-    this.clusterName = this.activatedRoute_.snapshot.queryParams["cluster"]
     this.namespace_ = this.activatedRoute_.snapshot.queryParams["namespace"]
     this.podName = this.activatedRoute_.snapshot.queryParams["pod"]
-    this.container = this.activatedRoute_.snapshot.queryParams["container"]
     this.shell = this.activatedRoute_.snapshot.queryParams["shell"]
   }
 
 
   ngAfterViewInit(): void {
-    if (this.namespace_ && this.podName && this.container) {
+    if (this.namespace_ && this.podName) {
       this.setupConnection()
     } else {
       alert("please set param: namespace,pod  and container name ")
@@ -78,7 +74,7 @@ export class TerminalComponent implements AfterViewInit {
   }
 
   onPodContainerChange(podContainer: string): void {
-    this._router.navigate([`/terminal/${this.namespace_}/${this.podName}/${podContainer}`], {
+    this._router.navigate([`/terminals/${this.namespace_}/${this.podName}/${podContainer}`], {
       queryParamsHandling: 'preserve',
     });
   }
@@ -157,7 +153,7 @@ export class TerminalComponent implements AfterViewInit {
 
 
   private async setupConnection(): Promise<void> {
-    if (!(this.container && this.podName && this.namespace_ && !this.connecting_)) {
+    if (!(this.podName && this.namespace_ && !this.connecting_)) {
       return;
     }
 
@@ -165,9 +161,9 @@ export class TerminalComponent implements AfterViewInit {
     this.connectionClosed_ = false;
 
     try {
-      const {data} = await this.terminalService.createTerminalSession(this.clusterName, this.namespace_, this.podName, this.container, this.shell).toPromise()
+      const {data} = await this.terminalService.createTerminalSession(this.namespace_, this.podName, this.shell).toPromise()
       const id = data.id
-      this.conn_ = new SockJS(`/kubepi/api/v1/ws/terminal/sockjs?${id}`);
+      this.conn_ = new SockJS(`/ws/${id}`);
       this.conn_.onopen = this.onConnectionOpen.bind(this, id);
       this.conn_.onmessage = this.onConnectionMessage.bind(this);
       this.conn_.onclose = this.onConnectionClose.bind(this);

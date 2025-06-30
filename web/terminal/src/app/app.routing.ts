@@ -9,8 +9,6 @@ export const routes: Routes = [
     path: '', component: AppComponent, children: [
       {path: '', redirectTo: 'app', pathMatch: 'full'},
       {path: 'app', component: TerminalComponent},
-      {path: 'logging', component: LoggingComponent},
-      {path: 'node_shell', component: NodeShellTerminalComponent},
       {path: '*', redirectTo: '', pathMatch: 'full'},
     ]
   },
