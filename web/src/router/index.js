@@ -159,13 +159,13 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/pod-ssh',
+    path: '/terminal',
     component: Layout,
     children: [
       {
-        path: 'pod-ssh',
+        path: 'terminal',
         name: 'SSH',
-        component: () => import('@/views/pod-ssh/index'),
+        component: () => import('@/views/terminal/index'),
         meta: { title: 'SSH', icon: 'form' }
       }
     ]
