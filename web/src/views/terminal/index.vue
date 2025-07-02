@@ -12,7 +12,7 @@
         <el-input v-model="form.container_name" />
       </el-form-item>
       <el-form-item label="Command"> <!-- 命令选择框 -->
-        <el-select v-model="form.command" placeholder="bash">
+        <el-select v-model="form.shell" placeholder="bash">
           <el-option label="bash" value="bash" />
           <el-option label="sh" value="sh" />
         </el-select>
@@ -38,7 +38,7 @@ export default {
     return {
       form: {
         namespace: 'default', // 默认命名空间为 "default"
-        command: 'bash', // 默认 shell 命令为 "bash"
+        shell: 'bash', // 默认 shell 命令为 "bash"
         pod_name: 'nginx', // 默认 Pod 名称为 "nginx"
         container_name: 'nginx' // 默认容器名称为 "nginx"
       },
@@ -66,14 +66,14 @@ export default {
       fitAddon.fit()
 
       // 创建一个新的 WebSocket 连接，并通过 URL 参数传递 pod, namespace, container 和 command 信息
-      const ws = new WebSocket('ws://127.0.0.1:9191/ssh?namespace=' + this.form.namespace + '&pod_name=' + this.form.pod_name + '&container_name=' + this.form.container_name + '&command=' + this.form.command)
+      const ws = new WebSocket('ws://127.0.0.1:8080/terminal?namespace=' + this.form.namespace + '&pod_name=' + this.form.pod_name + '&container_name=' + this.form.container_name + '&shell=' + this.form.shell)
 
       // 当 WebSocket 连接打开时，发送一个 resize 消息给服务器，告诉它终端的尺寸
       ws.onopen = function() {
         ws.send(JSON.stringify({
-          msg_type: 'resize',
-          rows: xterm.rows,
-          cols: xterm.cols
+          Op: 'resize',
+          Rows: xterm.rows,
+          Cols: xterm.cols
         }))
       }
 
@@ -91,17 +91,17 @@ export default {
       window.addEventListener('resize', function() {
         fitAddon.fit()
         ws.send(JSON.stringify({
-          msg_type: 'resize',
-          rows: xterm.rows,
-          cols: xterm.cols
+          Op: 'resize',
+          Rows: xterm.rows,
+          Cols: xterm.cols
         }))
       })
 
       // 当在终端中键入字符时，发送一个 input 消息给服务器
       xterm.onData((b) => {
         ws.send(JSON.stringify({
-          msg_type: 'input',
-          data: b
+          Op: 'stdin',
+          Data: b
         }))
       })
     }

@@ -170,9 +170,10 @@ var TerminalSessions = SessionMap{Sessions: make(map[string]TerminalSession)}
 func TerminalHandler(client clientset.Interface, config *rest.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		klog.Errorf("@@@ in TerminalSessionHandler")
-		podname := c.Query("name")
+		podName := c.Query("pod_name")
+		containerName := c.Query("container_name")
 		namespace := c.Query("namespace")
-		if podname == "" || namespace == "" {
+		if podName == "" || namespace == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "nil podname or namespace parameter",
 			})
@@ -182,7 +183,7 @@ func TerminalHandler(client clientset.Interface, config *rest.Config) gin.Handle
 		if shell == "" {
 			shell = "sh"
 		}
-		fmt.Println("base params:", podname, namespace, shell)
+		fmt.Println("base params:", podName, containerName, namespace, shell)
 
 		sessionID, err := GenTerminalSessionId()
 		fmt.Println("session id:", sessionID)
@@ -199,7 +200,7 @@ func TerminalHandler(client clientset.Interface, config *rest.Config) gin.Handle
 		TerminalSessions.Set(sessionID, session)
 
 		klog.Errorf("@@@ start WaitForTerminal")
-		go WaitForTerminal(client, config, namespace, podname, sessionID, shell)
+		go WaitForTerminal(client, config, namespace, podName, containerName, sessionID, shell)
 		resp := TerminalResponse{ID: sessionID}
 		c.Set("data", resp)
 	}
@@ -209,7 +210,7 @@ type TerminalResponse struct {
 	ID string `json:"id"`
 }
 
-func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string, namespace string, podName string, ptyHandler PtyHandler) error {
+func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string, namespace string, podName string, containerName string, ptyHandler PtyHandler) error {
 	klog.Errorf("@@@ in startProcess")
 	req := k8sClient.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -217,11 +218,12 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		Namespace(namespace).
 		SubResource("exec")
 	req.VersionedParams(&v1.PodExecOptions{
-		Command: cmd,
-		Stdin:   true,
-		Stdout:  true,
-		Stderr:  true,
-		TTY:     true,
+		Container: containerName,
+		Command:   cmd,
+		Stdin:     true,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       true,
 	}, scheme.ParameterCodec)
 	klog.Errorf("@@@ req.URL is %v", req.URL())
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
@@ -265,7 +267,7 @@ func isValidShell(validShells []string, shell string) bool {
 
 // WaitForTerminal is called from apihandler.handleAttach as a goroutine
 // Waits for the WebSocket connection to be opened by the client the session to be Bound in handleTerminalSession
-func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, namespace string, podName string, sessionId string, shell string) {
+func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, namespace string, podName string, containerName string, sessionId string, shell string) {
 	klog.Errorf("@@@ in WaitForTerminal")
 	klog.Errorf("@@@ sessionId:%v", sessionId)
 	select {
@@ -278,14 +280,14 @@ func WaitForTerminal(k8sClient kubernetes.Interface, cfg *rest.Config, namespace
 		if isValidShell(validShells, shell) {
 			cmd := []string{shell}
 			klog.Errorf("@@@ to startProcess")
-			err = startProcess(k8sClient, cfg, cmd, namespace, podName, TerminalSessions.Get(sessionId))
+			err = startProcess(k8sClient, cfg, cmd, namespace, podName, containerName, TerminalSessions.Get(sessionId))
 		} else {
 			// No shell given or it was not valid: try some shells until one succeeds or all fail
 			// FIXME: if the first shell fails then the first keyboard event is lost
 			for _, testShell := range validShells {
 				cmd := []string{testShell}
 				klog.Errorf("@@@ find to startProcess")
-				if err = startProcess(k8sClient, cfg, cmd, namespace, podName, TerminalSessions.Get(sessionId)); err == nil {
+				if err = startProcess(k8sClient, cfg, cmd, namespace, podName, containerName, TerminalSessions.Get(sessionId)); err == nil {
 					break
 				}
 			}
