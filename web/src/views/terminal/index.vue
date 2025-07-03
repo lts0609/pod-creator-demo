@@ -1,18 +1,18 @@
 <template>
   <div class="app-container">
     <!-- 使用 Element UI 的表单组件创建一个带有标签和输入框的表单 -->
-    <el-form ref="form" :model="form" :inline="true" label-width="120px">
-      <el-form-item label="namespace"> <!-- namespace 输入框 -->
-        <el-input v-model="form.namespace" />
+    <el-form ref="form" :model="terminal" :inline="true" label-width="120px">
+      <el-form-item label="Namespace"> <!-- namespace 输入框 -->
+        <el-input v-model="terminal.namespace" />
       </el-form-item>
-      <el-form-item label="pod name"> <!-- pod 名称输入框 -->
-        <el-input v-model="form.pod_name" />
+      <el-form-item label="Pod"> <!-- pod 名称输入框 -->
+        <el-input v-model="terminal.pod" />
       </el-form-item>
-      <el-form-item label="container name"> <!-- 容器名称输入框 -->
-        <el-input v-model="form.container_name" />
+      <el-form-item label="Container"> <!-- 容器名称输入框 -->
+        <el-input v-model="terminal.container" />
       </el-form-item>
       <el-form-item label="Command"> <!-- 命令选择框 -->
-        <el-select v-model="form.shell" placeholder="bash">
+        <el-select v-model="terminal.shell" placeholder="bash">
           <el-option label="bash" value="bash" />
           <el-option label="sh" value="sh" />
         </el-select>
@@ -36,11 +36,12 @@ import 'xterm/lib/xterm.js' // 导入 xterm 库
 export default {
   data() {
     return {
-      form: {
-        namespace: 'default', // 默认命名空间为 "default"
-        shell: 'bash', // 默认 shell 命令为 "bash"
-        pod_name: 'nginx', // 默认 Pod 名称为 "nginx"
-        container_name: 'nginx' // 默认容器名称为 "nginx"
+      terminal: {
+        namespace: 'default',
+        shell: 'bash',
+        pod: '',
+        container: '',
+        sessionid: ''
       },
     }
   },
