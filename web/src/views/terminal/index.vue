@@ -46,7 +46,7 @@ export default {
     }
   },
   methods: {
-    onSubmit() {
+    async onSubmit() {
       // 创建一个新的 Terminal 对象
       const xterm = new Terminal({
         theme: xtermTheme,
@@ -82,7 +82,7 @@ export default {
       const ws = new WebSocket(`ws://127.0.0.1:8080/ws/${id}`)
 
       // 当 WebSocket 连接打开时，发送一个 resize 消息给服务器，告诉它终端的尺寸
-      ws.onopen = function() {
+      ws.onopen = function () {
         ws.send(JSON.stringify({
           Op: 'resize',
           Rows: xterm.rows,
@@ -91,17 +91,17 @@ export default {
       }
 
       // 当从服务器收到消息时，写入终端显示
-      ws.onmessage = function(evt) {
+      ws.onmessage = function (evt) {
         xterm.write(evt.data)
       }
 
       // 当发生错误时，也写入终端显示
-      ws.onerror = function(evt) {
+      ws.onerror = function (evt) {
         xterm.write(evt.data)
       }
 
       // 当窗口尺寸变化时，重新调整终端的尺寸，并发送一个新的 resize 消息给服务器
-      window.addEventListener('resize', function() {
+      window.addEventListener('resize', function () {
         fitAddon.fit()
         ws.send(JSON.stringify({
           Op: 'resize',
