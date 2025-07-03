@@ -90,7 +90,6 @@ export default {
             Rows: this.xterm.rows,
             Cols: this.xterm.cols
           }))
-          this.xterm.write(this.prompt) // 显示初始提示符
         }
 
         // 使用箭头函数保持this上下文
@@ -157,6 +156,7 @@ export default {
 
     sendCommand(data) {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('send data: ', data)
         this.ws.send(JSON.stringify({
           Op: 'stdin',
           Data: data
