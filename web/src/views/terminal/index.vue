@@ -68,9 +68,9 @@ export default {
       fitAddon.fit()
 
       // 获取sessionid
-      const data = await axios.get('http://127.0.0.1:8080/terminals', {
+      const data = await axios.get('http://8.156.65.148:8080/terminals', {
         params: {
-          namespcae: this.terminal.namespace,
+          namespace: this.terminal.namespace,
           pod_name: this.terminal.pod,
           container_name: this.terminal.container,
           shell: this.terminal.shell
