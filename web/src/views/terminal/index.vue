@@ -43,7 +43,8 @@ export default {
         pod: '',
         container: '',
         sessionid: ''
-      }
+      },
+      inputBuffer: ''
     }
   },
   methods: {
@@ -94,7 +95,16 @@ export default {
 
       // 当从服务器收到消息时，写入终端显示
       ws.onmessage = function(evt) {
-        xterm.write(evt.data)
+        try {
+          const msg = JSON.parse(evt.data)
+          if (msg.Op === 'stdout') {
+            xterm.write(msg.Data)
+          } else {
+            console.error('Unknown message type:', msg.Op)
+          }
+        } catch (error) {
+          console.error('Error parsing message:', error)
+        }
       }
 
       // 当发生错误时，也写入终端显示
@@ -114,10 +124,24 @@ export default {
 
       // 当在终端中键入字符时，发送一个 input 消息给服务器
       xterm.onData((b) => {
-        ws.send(JSON.stringify({
-          Op: 'stdin',
-          Data: b
-        }))
+        if (b === '\r') { // 检查是否按下回车键
+          if (this.inputBuffer) {
+            ws.send(JSON.stringify({
+              Op: 'stdin',
+              Data: this.inputBuffer
+            }))
+            this.inputBuffer = '' // 清空缓冲区
+          }
+          xterm.write('\n') // 模拟回车换行
+        } else if (b === '\x7F') { // 处理退格键
+          if (this.inputBuffer.length > 0) {
+            this.inputBuffer = this.inputBuffer.slice(0, -1)
+            xterm.write('\b \b') // 模拟退格效果
+          }
+        } else {
+          this.inputBuffer += b
+          xterm.write(b)
+        }
       })
     }
   }
