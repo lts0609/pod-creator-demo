@@ -202,7 +202,7 @@ func TerminalHandler(client clientset.Interface, config *rest.Config) gin.Handle
 		klog.Errorf("@@@ start WaitForTerminal")
 		go WaitForTerminal(client, config, namespace, podName, containerName, sessionID, shell)
 		resp := TerminalResponse{ID: sessionID}
-		c.Set("data", resp)
+		c.JSON(http.StatusOK, resp)
 	}
 }
 
