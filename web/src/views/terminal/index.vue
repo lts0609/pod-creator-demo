@@ -31,7 +31,8 @@ import { common as xtermTheme } from 'xterm-style' // 导入 xterm 样式主题
 import 'xterm/css/xterm.css' // 导入 xterm CSS 样式
 import { FitAddon } from 'xterm-addon-fit' // 导入 xterm fit 插件，用于调整终端大小
 import { WebLinksAddon } from 'xterm-addon-web-links' // 导入 xterm web-links 插件，可以捕获 URL 并将其转换为可点击链接
-import 'xterm/lib/xterm.js' // 导入 xterm 库
+import 'xterm/lib/xterm.js'
+import axios from "axios"; // 导入 xterm 库
 
 export default {
   data() {
@@ -42,7 +43,7 @@ export default {
         pod: '',
         container: '',
         sessionid: ''
-      },
+      }
     }
   },
   methods: {
@@ -82,7 +83,7 @@ export default {
       const ws = new WebSocket(`ws://127.0.0.1:8080/ws/${id}`)
 
       // 当 WebSocket 连接打开时，发送一个 resize 消息给服务器，告诉它终端的尺寸
-      ws.onopen = function () {
+      ws.onopen = function() {
         ws.send(JSON.stringify({
           Op: 'resize',
           Rows: xterm.rows,
@@ -91,17 +92,17 @@ export default {
       }
 
       // 当从服务器收到消息时，写入终端显示
-      ws.onmessage = function (evt) {
+      ws.onmessage = function(evt) {
         xterm.write(evt.data)
       }
 
       // 当发生错误时，也写入终端显示
-      ws.onerror = function (evt) {
+      ws.onerror = function(evt) {
         xterm.write(evt.data)
       }
 
       // 当窗口尺寸变化时，重新调整终端的尺寸，并发送一个新的 resize 消息给服务器
-      window.addEventListener('resize', function () {
+      window.addEventListener('resize', function() {
         fitAddon.fit()
         ws.send(JSON.stringify({
           Op: 'resize',
