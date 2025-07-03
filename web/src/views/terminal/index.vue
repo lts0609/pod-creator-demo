@@ -69,7 +69,7 @@ export default {
       fitAddon.fit()
       console.log('get session id')
       // 获取sessionid
-      const {data} = await axios.get('http://8.156.65.148:8080/terminals', {
+      const data = await axios.get('http://8.156.65.148:8080/terminals', {
         params: {
           namespace: this.terminal.namespace,
           pod_name: this.terminal.pod,
@@ -122,27 +122,63 @@ export default {
         }))
       })
 
-      // 当在终端中键入字符时，发送一个 input 消息给服务器
-      xterm.onData((b) => {
-        if (b === '\r') { // 检查是否按下回车键
-          if (this.inputBuffer) {
-            ws.send(JSON.stringify({
-              Op: 'stdin',
-              Data: this.inputBuffer
-            }))
-            this.inputBuffer = '' // 清空缓冲区
-          }
-          xterm.write('\n') // 模拟回车换行
-        } else if (b === '\x7F') { // 处理退格键
-          if (this.inputBuffer.length > 0) {
-            this.inputBuffer = this.inputBuffer.slice(0, -1)
-            xterm.write('\b \b') // 模拟退格效果
-          }
-        } else {
-          this.inputBuffer += b
-          xterm.write(b)
+      // 当在终端中键入字符时，发送消息给服务器
+      xterm.onData((char) => {
+        // 处理回车符
+        if (char === '\r') {
+          // 无论缓冲区是否有内容，都发送至少一个换行符
+          const dataToSend = this.inputBuffer || '\n';
+          this.sendCommand(dataToSend);
+
+          // 清空缓冲区并显示换行
+          this.inputBuffer = '';
+          this.xterm.write('\n');
+
+          // 显示新的命令提示符
+          this.xterm.write(this.prompt);
         }
-      })
+        // 处理退格键
+        else if (char === '\x7F') {
+          if (this.inputBuffer.length > 0) {
+            // 删除缓冲区最后一个字符
+            this.inputBuffer = this.inputBuffer.slice(0, -1);
+            // 在终端中模拟退格效果
+            this.xterm.write('\b \b');
+          }
+        }
+        // 处理Ctrl+C（中断当前命令）
+        else if (char === '\x03') {
+          this.xterm.write('^C\n');
+          this.inputBuffer = '';
+          this.xterm.write(this.prompt);
+        }
+        // 处理Ctrl+D（EOF，通常用于退出shell）
+        else if (char === '\x04') {
+          if (this.inputBuffer.length === 0) {
+            // 如果缓冲区为空，发送EOF并关闭连接
+            this.xterm.write('^D\n');
+            this.sendCommand('\x04');
+            // 可以选择在这里关闭WebSocket连接
+          } else {
+            // 如果缓冲区有内容，将Ctrl+D作为普通字符处理
+            this.inputBuffer += char;
+            this.xterm.write(char);
+          }
+        }
+        // 处理其他普通字符
+        else {
+          this.inputBuffer += char;
+          this.xterm.write(char);
+        }
+      });
+    },
+    sendCommand(data) {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          Op: 'stdin',
+          Data: data
+        }));
+      }
     }
   }
 }
