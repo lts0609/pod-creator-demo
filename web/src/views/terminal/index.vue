@@ -45,7 +45,6 @@ export default {
       inputBuffer: '',
       xterm: null,      // 存储Terminal实例
       ws: null,         // 存储WebSocket实例
-      prompt: '$ ',     // 添加命令提示符
       resizeHandler: null // 存储resize事件处理器
     }
   },
@@ -131,8 +130,6 @@ export default {
             const dataToSend = this.inputBuffer || '\n'
             this.sendCommand(dataToSend)
             this.inputBuffer = ''
-            this.xterm.write('\n')
-            this.xterm.write(this.prompt)
           }
           else if (char === '\x7F') { // 退格
             if (this.inputBuffer.length > 0) {
@@ -143,7 +140,6 @@ export default {
           else if (char === '\x03') { // Ctrl+C
             this.xterm.write('^C\n')
             this.inputBuffer = ''
-            this.xterm.write(this.prompt)
           }
           else if (char === '\x04') { // Ctrl+D
             if (this.inputBuffer.length === 0) {
