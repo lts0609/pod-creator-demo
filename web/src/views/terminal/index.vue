@@ -66,7 +66,7 @@ export default {
 
       // 调整终端的大小以适应其父元素
       fitAddon.fit()
-
+      console.log("get session id")
       // 获取sessionid
       const data = await axios.get('http://localhost:8080/terminals', {
         params: {
@@ -78,7 +78,8 @@ export default {
       })
 
       const id = data.id
-
+      console.log("sessionid is", id)
+      console.log("new websocket")
       // 创建一个新的 WebSocket 连接，并通过 URL 参数传递 pod, namespace, container 和 command 信息
       const ws = new WebSocket(`ws://127.0.0.1:8080/ws/${id}`)
 
