@@ -81,12 +81,16 @@ func (t TerminalSession) Read(p []byte) (int, error) {
 	}
 	switch msg.Op {
 	case "stdin":
+		klog.Errorf("@@@ case stdin")
 		klog.Errorf("@@@ read data: %s", msg.Data)
 		return copy(p, msg.Data), nil
 	case "resize":
+		klog.Errorf("@@@ case resize")
+		klog.Errorf("@@@ read Width: %s Height: %s", msg.Cols, msg.Rows)
 		session.SizeChan <- remotecommand.TerminalSize{Width: msg.Cols, Height: msg.Rows}
 		return 0, nil
 	default:
+		klog.Errorf("@@@ case defaultn msg: %v", msg)
 		return copy(p, END_OF_TRANSMISSION), fmt.Errorf("unknown message type '%s'", msg.Op)
 	}
 }
@@ -239,9 +243,10 @@ func startProcess(k8sClient kubernetes.Interface, cfg *rest.Config, cmd []string
 		Tty:               true,
 	})
 	if err != nil {
+		klog.Errorf("@@@ stream error is", err)
 		return err
 	}
-
+	klog.Errorf("@@@ start stream ok")
 	return nil
 }
 
