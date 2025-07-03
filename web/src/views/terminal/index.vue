@@ -127,7 +127,7 @@ export default {
         // 处理终端输入
         this.xterm.onData((char) => {
           if (char === '\r') { // 回车
-            const dataToSend = this.inputBuffer || '\n'
+            const dataToSend = this.inputBuffer + '\n'
             this.sendCommand(dataToSend)
             this.inputBuffer = ''
           }
@@ -140,15 +140,6 @@ export default {
           else if (char === '\x03') { // Ctrl+C
             this.xterm.write('^C\n')
             this.inputBuffer = ''
-          }
-          else if (char === '\x04') { // Ctrl+D
-            if (this.inputBuffer.length === 0) {
-              this.xterm.write('^D\n')
-              this.sendCommand('\x04')
-            } else {
-              this.inputBuffer += char
-              this.xterm.write(char)
-            }
           }
           else { // 普通字符
             this.inputBuffer += char
