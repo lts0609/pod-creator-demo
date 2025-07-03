@@ -32,7 +32,7 @@ import 'xterm/css/xterm.css' // 导入 xterm CSS 样式
 import { FitAddon } from 'xterm-addon-fit' // 导入 xterm fit 插件，用于调整终端大小
 import { WebLinksAddon } from 'xterm-addon-web-links' // 导入 xterm web-links 插件，可以捕获 URL 并将其转换为可点击链接
 import 'xterm/lib/xterm.js'
-import axios from "axios"; // 导入 xterm 库
+import axios from 'axios'
 
 export default {
   data() {
@@ -66,9 +66,9 @@ export default {
 
       // 调整终端的大小以适应其父元素
       fitAddon.fit()
-      console.log("get session id")
+      console.log('get session id')
       // 获取sessionid
-      const data = await axios.get('http://8.156.65.148:8080/terminals', {
+      const {data} = await axios.get('http://8.156.65.148:8080/terminals', {
         params: {
           namespace: this.terminal.namespace,
           pod_name: this.terminal.pod,
@@ -78,8 +78,8 @@ export default {
       })
 
       const id = data.id
-      console.log("sessionid is", id)
-      console.log("new websocket")
+      console.log('sessionid is', id)
+      console.log('new websocket')
       // 创建一个新的 WebSocket 连接，并通过 URL 参数传递 pod, namespace, container 和 command 信息
       const ws = new WebSocket(`ws://8.156.65.148:8080/ws/${id}`)
 
