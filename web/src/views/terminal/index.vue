@@ -66,8 +66,20 @@ export default {
       // 调整终端的大小以适应其父元素
       fitAddon.fit()
 
+      // 获取sessionid
+      const data = await axios.get('http://127.0.0.1:8080/terminals', {
+        params: {
+          namespcae: this.terminal.namespace,
+          pod_name: this.terminal.pod,
+          container_name: this.terminal.container,
+          shell: this.terminal.shell
+        }
+      })
+
+      const id = data.id
+
       // 创建一个新的 WebSocket 连接，并通过 URL 参数传递 pod, namespace, container 和 command 信息
-      const ws = new WebSocket('ws://127.0.0.1:8080/terminal?namespace=' + this.form.namespace + '&pod_name=' + this.form.pod_name + '&container_name=' + this.form.container_name + '&shell=' + this.form.shell)
+      const ws = new WebSocket(`ws://127.0.0.1:8080/ws/${id}`)
 
       // 当 WebSocket 连接打开时，发送一个 resize 消息给服务器，告诉它终端的尺寸
       ws.onopen = function() {
