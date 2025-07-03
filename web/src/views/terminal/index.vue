@@ -76,7 +76,7 @@ export default {
           shell: this.terminal.shell
         }
       })
-
+      console.log('data is', data)
       const id = data.id
       console.log('sessionid is', id)
       console.log('new websocket')
