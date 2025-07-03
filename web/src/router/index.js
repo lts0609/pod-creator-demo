@@ -41,19 +41,7 @@ export const constantRoutes = [
       component: () => import('@/views/terminal/index'),
       meta: { title: 'Terminal', icon: 'form' }
     }]
-  },
-  {
-    path: '/terminal',
-    component: Layout,
-    children: [
-      {
-        path: 'terminal',
-        name: 'Terminal',
-        component: () => import('@/views/terminal/index'),
-        meta: { title: 'Terminal', icon: 'form' }
-      }
-    ]
-  },
+  }
 ]
 
 const createRouter = () => new Router({
