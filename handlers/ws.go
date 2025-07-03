@@ -3,17 +3,20 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"k8s.io/klog/v2"
 	"log"
 	"net/http"
 )
 
 func WSConnectHandler(c *gin.Context) {
-	sessionID := c.Param("sessionid")
-	session := TerminalSessions.Get(sessionID)
+	klog.Errorf("@@@ in WSConnectHandler")
+	sessionId := c.Param("sessionid")
+	session := TerminalSessions.Get(sessionId)
 	if session.Id == "" {
-		log.Printf("handleTerminalSession: can't find session '%s'", sessionID)
+		log.Printf("handleTerminalSession: can't find session '%s'", sessionId)
 		return
 	}
+	klog.Errorf("sessionid is '%s'", sessionId)
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -29,7 +32,12 @@ func WSConnectHandler(c *gin.Context) {
 		return
 	}
 	terminalSession := session
+	if conn == nil {
+		klog.Errorf("@@@ conn is nil !!!")
+	}
 	terminalSession.wsConn = conn
-	TerminalSessions.Set(sessionID, terminalSession)
+	klog.Infof("@@@ wsConn use conn")
+	TerminalSessions.Set(sessionId, terminalSession)
+	klog.Errorf("@@@ TerminalSession is %v", TerminalSessions.Get(sessionId))
 	terminalSession.Bound <- nil
 }
